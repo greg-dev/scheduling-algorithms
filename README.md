@@ -1,8 +1,8 @@
-## Visualisation of algorithms for Minimizing Maximum Lateness
+## Visualization of algorithms for minimizing maximum lateness
 
 Yet another small JavaScript project created for my studies (Real-time Computing Systems course) in 2008.
 
-The task was to implement different an algorithms for Minimizing Maximum Lateness for below problems:
+The task was to implement different algorithms for minimizing maximum lateness for below problems:
 * **1|rj=0|Lmax** (a simple single machine case)
 * **1|rj,prm|Lmax** (preemptive tasks on single machine)
 * **1|rj,prm,prec|Lmax** (preemptive tasks with precedence constraints on single machine)
