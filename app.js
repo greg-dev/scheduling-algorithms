@@ -43,7 +43,6 @@ var app = {
         app.cnvWIDTH  = parseInt(app.cnv.width);
         app.cnvHEIGHT = parseInt(app.cnv.height);
         app.ctx = app.cnv.getContext("2d");
-        CanvasTextFunctions.enable(app.ctx);
 
         app.log = document.getElementById("log");
 
@@ -777,8 +776,8 @@ function Task(p,r,d,i){
             case "L":  info = this.L; break;
         }
         canvasWrite(x-20, y,   sInfo,     sColor,10,bForceWrite);
-        canvasWrite(x-10, y+5, ""+this.i, sColor, 6,bForceWrite);
-        canvasWrite(x-2,  y,   "="+info,  sColor,10,bForceWrite);
+        canvasWrite(x-12, y+5, ""+this.i, sColor, 7,bForceWrite);
+        canvasWrite(x-5,  y,   "="+info,  sColor,10,bForceWrite);
     };
 }
 
@@ -922,13 +921,12 @@ function checkRandomTasks(){
 
 function canvasWrite(x,y,sText,sColor,fontsize,bForceWrite){
     if(app.bCanvasTextEnabled || bForceWrite){
-        fontsize = fontsize || 8;
-        x += app.ctx.fontAscent("sans",fontsize);
-        sColor = sColor || "rgb(0,0,0)";
-        app.ctx.strokeStyle = sColor;
-        app.ctx.drawTextCenter("sans",fontsize,x,y,sText);
-        // set default strokeStyle as black
-        app.ctx.strokeStyle = "rgb(0,0,0)";
+        fontsize = fontsize + 2 || 8;
+        app.ctx.font = "normal normal normal "+fontsize+"px sans-serif";
+        app.ctx.fillStyle = sColor || "rgb(0,0,0)";
+        app.ctx.fillText(sText,++x,y);
+        // set default fillStyle to black
+        app.ctx.fillStyle = "rgb(0,0,0)";
     }
 }
 
@@ -969,11 +967,6 @@ function showInfo(){
     sTxt.push("Z uwagi na wykorzystanie w projekcie elementu graficznego &lt;canvas&gt;");
     sTxt.push("skrypt dziala tylko w przegladarkach internetowych");
     sTxt.push("opartych na silniku co najmniej Gecko 1.8 (FireFox od wersji 1.5)");
-    sTxt.push("W zwiazku z ograniczeniami przegladarek internetowych");
-    sTxt.push("opartych na silnikach starszych niz Gecko 1.9.1 (FireFox 3.1)");
-    sTxt.push("wykorzystalem skrypt Jima Studta <a href='canvastext.js'>canvastext.js</a>");
-    sTxt.push("  <a href='http://www.federated.com/~jim/canvastext'>http://www.federated.com/~jim/canvastext</a>");
-    sTxt.push("pozwalajacy na renderowanie tekstu w elemencie &lt;canvas&gt;</center>");
     app.log.innerHTML = sTxt.join("<br/>");
 }
 
