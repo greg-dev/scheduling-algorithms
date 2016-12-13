@@ -1,0 +1,18 @@
+body{background-color:#000000;color:#33DD33; font-family:monospace; font-size:12px; cursor:default; width:1050px;}
+h2{color:#CCFFCC;}
+canvas{background-color:#CCFFCC; border:1px solid black;}
+table{height:350px;}
+td{vertical-align:top; border:1px solid #003300;}
+td#tdLog{width:450px;}
+pre#log{font-size:8pt; width:470px; height:100%; overflow:scroll; overflow-y:auto; overflow-x:auto;
+        max-height:400px; min-height:400px; height:auto !important; height:400px; /* IE6 min-height hack */}
+input{background-color:#003300; border:1px solid #003300; color:#009900;}
+input.inpClick{ border:1px solid #003300; font-weight:bold;}
+input.inpTxt{width:25px;}
+input#inpA{ width:140px;}
+input#inpD{ width:60px;}
+input#inpC, input#inpK, input#inpL{ width:45px;}
+input:hover{background-color:#006600; color:#CCFFCC; cursor:default;}
+span.spnLow{font-size:10px; color:#33DD33;}
+a{color:#CCFFCC; text-decoration:none;}
+a:hover{color:white;}
