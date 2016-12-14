@@ -33,6 +33,7 @@ var app = {
     // config
     displayLog: true,
     displayColors: false,
+    displayLateness: true,
     bOneLine: false,
     bRandomTasks: false,
     bCanvasTextEnabled: false,
@@ -725,6 +726,13 @@ function Task(p,r,d,i){
           app.ctx.globalAlpha = 1;
         }
 
+        // draw Lateness mark, write Lj
+        if(app.displayLateness && this.L > 0){
+            app.ctx.fillStyle = "rgb(204,255,204)";
+            app.ctx.fillRect(app.scale*this.s+app.cnvFRAME+2, thisi*20+app.cnvFRAME+app.cnvUP+2,7,16);
+            this.drawInfo("L",app.scale*this.s+app.cnvFRAME+20, thisi*20+app.cnvFRAME+app.cnvUP+30,true);
+        }
+
         // write numbers of Tasks if not line chart
         if(!app.bOneLine) {
              canvasWrite(0, thisi*20+app.cnvFRAME+15+app.cnvUP, "T"+this.i,"rgb(0,0,0)",10,true);
@@ -733,19 +741,6 @@ function Task(p,r,d,i){
              canvasWrite(app.scale*this.s+app.cnvFRAME,
                          thisi*20+app.cnvFRAME+15+app.cnvUP,     ""+this.i,"rgb(0,0,0)",10,true);
         }
-
-/*
-        // draw Lateness mark, write L
-        if(this.L > 0){
-            app.ctx.fillStyle = "rgb(0,0,0)";
-            app.ctx.fillRect(app.scale*this.s+app.cnvFRAME+5, thisi*20+app.cnvFRAME+5+app.cnvUP, 10, 10);
-            if(!app.bOneLine) {
-                this.drawInfo("L",app.scale*this.s+app.cnvFRAME+30, thisi*20+app.cnvFRAME+app.cnvUP+15,true);
-            } else {
-                this.drawInfo("L",app.scale*this.s+app.cnvFRAME+10, thisi*20+app.cnvFRAME+app.cnvUP+30,true);
-            }
-        }
-*/
     };
 
     this.drawDeadlineMark = function(r,g,b){
@@ -808,12 +803,23 @@ function drawScale(){
     }
 }
 
+function switchDisplayLateness(){
+    if(app.displayLateness){
+        document.getElementById("inpL").value = "Lj:N";
+        app.displayLateness = false;
+    } else {
+        document.getElementById("inpL").value = "Lj:Y";
+        app.displayLateness = true;
+    }
+    app.drawChart();
+}
+
 function switchDisplayLog(){
     if(app.displayLog){
-        document.getElementById("inpL").value = "log:N";
+        document.getElementById("inpLog").value = "log:N";
         app.displayLog = false;
     } else {
-        document.getElementById("inpL").value = "log:Y";
+        document.getElementById("inpLog").value = "log:Y";
         app.displayLog = true;
     }
     app.drawChart();
