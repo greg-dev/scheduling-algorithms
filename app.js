@@ -4,6 +4,16 @@ Array.prototype.inArray = function(x){
     return false;
 };
 
+var $ = (function() {
+    var elements = {};
+    return function(id){
+        if(typeof elements[id] === "undefined") {
+            elements[id] = document.getElementById(id);
+        }
+        return elements[id];
+    };
+}());
+
 window.onload = function(){
     app.init();
 };
@@ -40,19 +50,19 @@ var app = {
     sAlgorithm: "",
 
     init: function(){
-        app.cnv = document.getElementById("cnvsChart");
+        app.cnv = $("cnvsChart");
         app.cnvWIDTH  = parseInt(app.cnv.width);
         app.cnvHEIGHT = parseInt(app.cnv.height);
         app.ctx = app.cnv.getContext("2d");
 
-        app.log = document.getElementById("log");
+        app.log = $("log");
 
         app.start();
         showInfo();
     },
 
     start: function(){
-        document.getElementById("inpG").disabled = true;
+        $("inpG").disabled = true;
 
         // clear Tasks and content, check settings...
         app.T = [];
@@ -155,21 +165,21 @@ var app = {
         app.drawChart();
         outputLog();
 
-        document.getElementById("inpG").disabled = false;
+        $("inpG").disabled = false;
     },
 
     generateTasks: function(){
-        var n = parseInt(document.getElementById("inpTnum").value);
+        var n = parseInt($("inpTnum").value);
 
         if(app.bRandomTasks){
             var pmin,pmax,rmin,rmax,dmin,dmax;
             var pRand,rRand,dRand;
-            pmin = parseInt(document.getElementById("inpPmin").value);
-            pmax = parseInt(document.getElementById("inpPmax").value);
-            rmin = parseInt(document.getElementById("inpRmin").value);
-            rmax = parseInt(document.getElementById("inpRmax").value);
-            dmin = parseInt(document.getElementById("inpDmin").value);
-            dmax = parseInt(document.getElementById("inpDmax").value);
+            pmin = parseInt($("inpPmin").value);
+            pmax = parseInt($("inpPmax").value);
+            rmin = parseInt($("inpRmin").value);
+            rmax = parseInt($("inpRmax").value);
+            dmin = parseInt($("inpDmin").value);
+            dmax = parseInt($("inpDmax").value);
 
             for(var i=1;i<=n;i++){
                 pRand = Math.floor(Math.random()*(pmax-pmin+1))+pmin;
@@ -200,7 +210,7 @@ var app = {
         // jesli in-tree, wylosuj kolejnosc
         if("P|pj=1,in-tree|Lmax" == app.sAlgorithm){
             var t,s;
-            app.iM = parseInt(document.getElementById("inpMnum").value);
+            app.iM = parseInt($("inpMnum").value);
 
             var aTempT = [];
             var aTempS = [];
@@ -805,10 +815,10 @@ function drawScale(){
 
 function switchDisplayLateness(){
     if(app.displayLateness){
-        document.getElementById("inpL").value = "Lj:N";
+        $("inpL").value = "Lj:N";
         app.displayLateness = false;
     } else {
-        document.getElementById("inpL").value = "Lj:Y";
+        $("inpL").value = "Lj:Y";
         app.displayLateness = true;
     }
     app.drawChart();
@@ -816,10 +826,10 @@ function switchDisplayLateness(){
 
 function switchDisplayLog(){
     if(app.displayLog){
-        document.getElementById("inpLog").value = "log:N";
+        $("inpLog").value = "log:N";
         app.displayLog = false;
     } else {
-        document.getElementById("inpLog").value = "log:Y";
+        $("inpLog").value = "log:Y";
         app.displayLog = true;
     }
     app.drawChart();
@@ -827,35 +837,35 @@ function switchDisplayLog(){
 
 function switchDisplayColors(){
     if(app.displayColors){
-        document.getElementById("inpK").value = "rgb:N";
+        $("inpK").value = "rgb:N";
         app.displayColors = false;
     } else {
-        document.getElementById("inpK").value = "rgb:Y";
+        $("inpK").value = "rgb:Y";
         app.displayColors = true;
     }
     app.drawChart();
 }
 
 function checkOneLine(){
-    app.bOneLine = ("chart:M" == document.getElementById("inpD").value) ? true : false;
+    app.bOneLine = ("chart:M" == $("inpD").value) ? true : false;
 }
 
 function checkAlgType(){
-    app.sAlgorithm = document.getElementById("inpA").value;
+    app.sAlgorithm = $("inpA").value;
 }
 
 function switchAlgType(){
-    var inpPmin = document.getElementById("inpPmin");
-    var inpPmax = document.getElementById("inpPmax");
-    var inpRmin = document.getElementById("inpRmin");
-    var inpRmax = document.getElementById("inpRmax");
-    var inpTnum = document.getElementById("inpTnum");
-    var inpMnum = document.getElementById("inpMnum");
+    var inpPmin = $("inpPmin");
+    var inpPmax = $("inpPmax");
+    var inpRmin = $("inpRmin");
+    var inpRmax = $("inpRmax");
+    var inpTnum = $("inpTnum");
+    var inpMnum = $("inpMnum");
 
-    var sPrevAlgorithm = document.getElementById("inpA").value;
+    var sPrevAlgorithm = $("inpA").value;
     switch(sPrevAlgorithm){
         case"P|pj=1,in-tree|Lmax":
-            document.getElementById("inpA").value = "1||Lmax";
+            $("inpA").value = "1||Lmax";
             app.sAlgorithm = "1||Lmax";
             inpPmin.disabled = false; inpPmin.value = 1;
             inpPmax.disabled = false; inpPmax.value = 9;
@@ -864,7 +874,7 @@ function switchAlgType(){
             inpMnum.disabled = true;  inpMnum.value = 1;
             break;
         case"1||Lmax":
-            document.getElementById("inpA").value = "1|rj,prm|Lmax";
+            $("inpA").value = "1|rj,prm|Lmax";
             app.sAlgorithm = "1||Lmax";
             inpPmin.disabled = false; inpPmin.value = 1;
             inpPmax.disabled = false; inpPmax.value = 9;
@@ -873,7 +883,7 @@ function switchAlgType(){
             inpMnum.disabled = true;  inpMnum.value = 1;
             break;
         case"1|rj,prm|Lmax":
-            document.getElementById("inpA").value = "1|rj,prm,prec|Lmax";
+            $("inpA").value = "1|rj,prm,prec|Lmax";
             app.sAlgorithm = "1|rj,prm,prec|Lmax";
             inpPmin.disabled = false; inpPmin.value = 1;
             inpPmax.disabled = false; inpPmax.value = 9;
@@ -882,7 +892,7 @@ function switchAlgType(){
             inpMnum.disabled = true;  inpMnum.value = 1;
             break;
       case"1|rj,prm,prec|Lmax":
-            document.getElementById("inpA").value = "P|pj=1,in-tree|Lmax";
+            $("inpA").value = "P|pj=1,in-tree|Lmax";
             app.sAlgorithm = "P|pj=1,in-tree|Lmax";
             inpPmin.disabled = true;  inpPmin.value = 1;
             inpPmax.disabled = true;  inpPmax.value = 1;
@@ -894,11 +904,11 @@ function switchAlgType(){
     }
 }
 function switchChartType(){
-    if("chart:M" == document.getElementById("inpD").value){
-        document.getElementById("inpD").value = "chart:T";
+    if("chart:M" == $("inpD").value){
+        $("inpD").value = "chart:T";
         app.bOneLine = false;
     } else {
-        document.getElementById("inpD").value = "chart:M";
+        $("inpD").value = "chart:M";
         app.bOneLine = true;
     }
     app.drawChart();
@@ -906,21 +916,21 @@ function switchChartType(){
 
 function switchCanvasText(){
     if(app.bCanvasTextEnabled){
-        document.getElementById("inpC").value = "txt:N";
+        $("inpC").value = "txt:N";
         app.bCanvasTextEnabled = false;
     } else {
-        document.getElementById("inpC").value = "txt:Y";
+        $("inpC").value = "txt:Y";
         app.bCanvasTextEnabled = true;
     }
     app.drawChart();
 }
 
 function checkRandomTasks(){
-    if(document.getElementById("inpR").checked){
+    if($("inpR").checked){
         app.bRandomTasks = true;
     } else {
         alert("tylko dane generowane losowo");
-        document.getElementById("inpR").checked = true;
+        $("inpR").checked = true;
         app.bRandomTasks = true;
     }
 }
