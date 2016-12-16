@@ -29,16 +29,13 @@ var app = {
     iLmax: 0,
 
     // graphics
-    cnv:     false,
-    cnvTree: false,
-    cnvWIDTH:  0,
-    cnvHEIGHT: 0,
-    cnvFRAME: 20,
-    cnvUP:   150,
-    maxWidth:  0,
+    cnv: null,
+    w:   0, // cnv width
+    h:   0, // cnv height
+    f:  20, // cnv XOY top left padding
+    u: 150, // Tasks/Machines top line
+    wmax: 0,
     scale: 1,
-    log: "",
-    buf: "",
 
     // config
     displayLog: true,
@@ -48,17 +45,28 @@ var app = {
     bRandomTasks: false,
     bCanvasTextEnabled: false,
     sAlgorithm: "",
+    buf: "",
 
     init: function(){
         app.cnv = $("cnvsChart");
-        app.cnvWIDTH  = parseInt(app.cnv.width);
-        app.cnvHEIGHT = parseInt(app.cnv.height);
+        app.w = parseInt(app.cnv.width);
+        app.h = parseInt(app.cnv.height);
         app.ctx = app.cnv.getContext("2d");
 
-        app.log = $("log");
+        app.ctx.write = function(x,y,sText,sColor,fontsize,bForceWrite){
+            var ctx = app.ctx;
+            if(app.bCanvasTextEnabled || bForceWrite){
+                fontsize = fontsize + 2 || 8;
+                ctx.font = "normal normal normal "+fontsize+"px sans-serif";
+                ctx.fillStyle = sColor || "rgb(0,0,0)";
+                ctx.fillText(sText,++x,y);
+                // set default fillStyle to black
+                ctx.fillStyle = "rgb(0,0,0)";
+            }
+        };
 
         app.start();
-        showInfo();
+        app.showInfo();
     },
 
     start: function(){
@@ -68,9 +76,9 @@ var app = {
         app.T = [];
         app.aReadyTasks = [];
         clearLog();
-        checkOneLine();
-        checkRandomTasks();
-        checkAlgType();
+        app.checkOneLine();
+        app.checkRandomTasks();
+        app.checkAlgType();
 
         app.generateTasks();
 
@@ -82,7 +90,7 @@ var app = {
                 logbr();
 
                 logh("Arrange tasks in EDD order");
-                app.T.sort(sortEDD);
+                app.T.sort(app.sortEDD);
                 app.showAllTasks("p,r,d");
                 app.scheduler1();
 
@@ -100,7 +108,7 @@ var app = {
                 logbr();
 
                 logh("Arrange tasks in EDD order");
-                app.T.sort(sortEDD);
+                app.T.sort(app.sortEDD);
                 app.showAllTasks("p,r,d");
 
                 logbr();
@@ -110,7 +118,7 @@ var app = {
 
                 logbr();
 
-                logh("<br>Scheduled tasks:");
+                logh("Scheduled tasks:");
                 app.calculateLatenesses();
                 app.showAllTasks("p,r,d,s,c,L");
             break;
@@ -123,7 +131,7 @@ var app = {
 
                 logh("Calculate d* and arrange tasks in EDD dprec order");
                 app.setdprec3();
-                app.T.sort(sortEDDdprec);
+                app.T.sort(app.sortEDDdprec);
                 app.showAllTasks("p,r,d,d*,prec,waiting");
 
                 logbr();
@@ -231,9 +239,25 @@ var app = {
         }
     },
 
-    /********************************************************
-     *  1||Lmax
-     ********************************************************/
+    calculateLatenesses: function(){
+        for(var i=0,ii=app.T.length;i<ii;i++){
+            app.T[i].calculateLateness();
+            if(app.T[i].L > app.Lmax){
+                app.Lmax = app.T[i].L;
+                app.iLmax = app.T[i].i;
+            }
+        }
+    },
+
+    showAllTasks: function(sInfo){
+        for(var i=0,ii=app.T.length;i<ii;i++){
+            app.T[i].info(sInfo);
+        }
+    },
+
+    /* schedulers */
+
+    /* 1||Lmax */
     scheduler1: function(){
         var t = 0;
         for(var i=0,ii=app.T.length;i<ii;i++){
@@ -243,9 +267,7 @@ var app = {
         }
     },
 
-    /********************************************************
-     *  1|rj,prm|Lmax
-     ********************************************************/
+    /* 1|rj,prm|Lmax */
     scheduler2: function(T,t){
         T = T || app.getFirstRemainingTask2(0);
         t = t || 0;
@@ -281,7 +303,7 @@ var app = {
             T.done = true;
             log2("Task["+T.i+"] partially completed at t="+t);
             app.T.push(Tnew);
-            app.T.sort(sortEDD);
+            app.T.sort(app.sortEDD);
 
             // process next task
             app.scheduler2(Tnext,t);
@@ -306,7 +328,10 @@ var app = {
         for(var i=0,ii=app.T.length;i<ii;i++){
             if(!app.T[i].done){
                 // zapamietaj pierwsze zadanie z relase time wiekszym niz teraz
-                if(!bIsFreeR) if(t < app.T[i].r){iFirstFreeR = i; bIsFreeR = true;}
+                if(!bIsFreeR && t < app.T[i].r){
+                    iFirstFreeR = i;
+                    bIsFreeR = true;
+                }
                 // jesli sie da, to odpal pierwsze mozliwe wg. d
                 if(app.T[i].r <= t){
                     // log2("first remaining Task["+app.T[i].i+"]");
@@ -327,22 +352,7 @@ var app = {
         }
     },
 
-    /********************************************************
-     *  1|rj,prm,prec|Lmax
-     ********************************************************/
-    setdprec3: function(){
-        var dprec = 0;
-
-        // dla kazdego zadania i
-        for(var i=0,ii=app.T.length;i<ii;i++){
-            dprec = app.T[i].d;
-            // przypisz wartosc najmniejsza di sposrod zadan na nie oczekujacych
-            for(var j=0,jj=app.T[i].waiting.length; j<jj; j++)
-                dprec = Math.min(dprec,app.T[app.getRealIndex(app.T[i].waiting[j])].d);
-            app.T[i].dprec = dprec;
-        }
-    },
-
+    /* 1|rj,prm,prec|Lmax */
     scheduler3: function(T,t){
         T = T || app.getFirstRemainingTask3(0);
         t = t || 0;
@@ -380,7 +390,7 @@ var app = {
             T.done = true;
             log2("Task["+T.i+"] partially completed at t="+t);
             app.T.push(Tnew);
-            app.T.sort(sortEDDdprec);
+            app.T.sort(app.sortEDDdprec);
 
             // zacznij przetwarzac nastepne
             app.scheduler3(Tnext,t);
@@ -411,7 +421,11 @@ var app = {
         for(var i=0,ii=app.T.length;i<ii;i++){
             if(!app.T[i].done && app.T[i].isReady()){
                 // zapamietaj pierwsze zadanie z relase time wiekszym niz teraz
-                if(!bIsFreeR) if(t < app.T[i].r){iFirstFreeR = i; bIsFreeR = true; Tfirst = app.T[iFirstFreeR];}
+                if(!bIsFreeR && t < app.T[i].r){
+                    iFirstFreeR = i;
+                    bIsFreeR = true;
+                    Tfirst = app.T[iFirstFreeR];
+                }
                 // jesli sie da, to odpal pierwsze mozliwe wg. d
                 if(app.T[i].r <= t){
                     //log2("first remaining Task["+app.T[i].i+"]");
@@ -432,35 +446,24 @@ var app = {
         }
     },
 
-    /********************************************************
-     *  P|pj=1,in-tree|Lmax
-     ********************************************************/
-    setdprec4: function(T,dprecNext){
-        var Tprev;
-        for(var i=0,ii=T.prec.length;i<ii;i++){
-            Tprev = app.T[app.getRealIndex(T.prec[i])];
-            Tprev.dprec = Math.max(1+dprecNext,1-Tprev.d);
-            log2("T["+T.i+"].d*next="+dprecNext+" \tT["+Tprev.i+"].d*="+Tprev.dprec);
-            app.setdprec4(Tprev,Tprev.dprec);
-        }
+    setdprec3: function(){
+        var dprec = 0;
 
-        // dodaj go do gotowych, jesli go tam jeszcze nie ma
-        if(0 === T.prec.length){
-            var bIsInReady = false;
-            for(var i=0,ii=app.aReadyTasks;i<ii;i++){
-                if(app.aReadyTasks[i] == T.i) bIsInReady = true;
-            }
-            if(!bIsInReady){
-                app.aReadyTasks.push(T.i);
-                log("\t\t\t"+"T["+T.i+"] is ready");
-            }
+        // dla kazdego zadania i
+        for(var i=0,ii=app.T.length;i<ii;i++){
+            dprec = app.T[i].d;
+            // przypisz wartosc najmniejsza di sposrod zadan na nie oczekujacych
+            for(var j=0,jj=app.T[i].waiting.length; j<jj; j++)
+                dprec = Math.min(dprec,app.T[app.getRealIndex(app.T[i].waiting[j])].d);
+            app.T[i].dprec = dprec;
         }
     },
 
+    /* P|pj=1,in-tree|Lmax */
     scheduler4: function(t){
         t = t || 0;
         log1("checking tasks at t="+t);
-        app.aReadyTasks.sort(sortdprec);
+        app.aReadyTasks.sort(app.sortdprec);
         log2("ready tasks sorted: "+app.aReadyTasks);
 
         // wez M pierwszych wolnych i obrob
@@ -494,7 +497,7 @@ var app = {
                 var bReady = true;
                 var Tnext = app.T[app.getRealIndex(T.iNext)];
                 for(var j=0,jj=Tnext.prec.length;j<jj;j++){
-                    bReady = (bReady && app.T[app.getRealIndex(Tnext.prec[j])].done) ? true : false;
+                    bReady = bReady && app.T[app.getRealIndex(Tnext.prec[j])].done;
                 }
                 if(bReady){
                     app.aReadyTasks.push(T.iNext);
@@ -508,55 +511,78 @@ var app = {
             app.scheduler4(t+1);
         }
     },
- /*******************************************************/
 
-    calculateLatenesses: function(){
-        for(var i=0,ii=app.T.length;i<ii;i++){
-            app.T[i].calculateLateness();
-            if(app.T[i].L > app.Lmax){
-                app.Lmax = app.T[i].L;
-                app.iLmax = app.T[i].i;
+    setdprec4: function(T,dprecNext){
+        var Tprev;
+        for(var i=0,ii=T.prec.length;i<ii;i++){
+            Tprev = app.T[app.getRealIndex(T.prec[i])];
+            Tprev.dprec = Math.max(1+dprecNext,1-Tprev.d);
+            log2("T["+T.i+"].d*next="+dprecNext+" \tT["+Tprev.i+"].d*="+Tprev.dprec);
+            app.setdprec4(Tprev,Tprev.dprec);
+        }
+
+        // dodaj go do gotowych, jesli go tam jeszcze nie ma
+        if(0 === T.prec.length){
+            var bIsInReady = false;
+            for(var i=0,ii=app.aReadyTasks;i<ii;i++){
+                if(app.aReadyTasks[i] == T.i) bIsInReady = true;
+            }
+            if(!bIsInReady){
+                app.aReadyTasks.push(T.i);
+                log("\t\t\t"+"T["+T.i+"] is ready");
             }
         }
     },
 
-    showAllTasks: function(sInfo){
-        for(var i=0,ii=app.T.length;i<ii;i++){
-            app.T[i].info(sInfo);
-        }
+    /* sorting functions */
+
+    sortEDD: function(t1,t2){
+        return (t1.d == t2.d) ? t1.r - t2.r : t1.d - t2.d;
     },
+
+    sortEDDdprec: function(t1,t2){
+        return (t1.dprec == t2.dprec) ? t1.r - t2.r : t1.dprec - t2.dprec;
+    },
+
+    sortdprec: function(i1,i2){
+        i1 = app.getRealIndex(i1);
+        i2 = app.getRealIndex(i2);
+        return app.T[i2].dprec - app.T[i1].dprec;
+    },
+
+    /* drawing functions */
 
     getColor: function(i){
         var r,g,b,iColor;
         iColor = Math.floor(200*app.T[i].i/app.iToriginalLength+55);
 
         if(app.displayColors){
-            g = 255 - iColor;
             r = 0 + Math.floor(iColor / 2);
+            g = 255 - iColor;
+            b = 0;
         } else {
             r = 0;
             g = iColor;
+            b = 0;
         }
-        b = 0;
 
         return [r,g,b];
     },
 
     drawChart: function(){
         // clear previous content
-        app.ctx.clearRect(0,0,app.cnvWIDTH,app.cnvHEIGHT);
+        app.ctx.clearRect(0,0,app.w,app.h);
         // scale...
-        app.maxWidth = 0;
+        app.wmax = 0;
         app.scale = 1;
         for(var i=0,ii=app.T.length;i<ii;i++){
-            if(app.T[i].c > app.maxWidth) app.maxWidth = app.T[i].c;
-            if(app.T[i].d > app.maxWidth) app.maxWidth = app.T[i].d;
+            if(app.T[i].c > app.wmax) app.wmax = app.T[i].c;
+            if(app.T[i].d > app.wmax) app.wmax = app.T[i].d;
         }
-        app.scale = (app.cnvWIDTH-2*app.cnvFRAME)/app.maxWidth;
+        app.scale = (app.w-2*app.f)/app.wmax;
 
-        // draw XOY
-        drawXOY();
-        drawScale();
+        app.drawXOY();
+        app.drawScale();
 
         // draw all tasks
         var bSplitted,aRGB;
@@ -580,10 +606,11 @@ var app = {
 
     drawChartTree: function(){
         var Troot = app.T[app.getRealIndex(app.iTroot)];
-        app.drawLeaf(Troot,app.cnvWIDTH-app.cnvFRAME-10,120,0,0,1);
+        app.drawLeaf(Troot,app.w-app.f-10,120,0,0,1);
     },
 
     drawLeaf: function(T,xCenter,yCenter,r,fi,iLevel){
+        var ctx = app.ctx;
         var LEVEL = 35;
 
         var x = r*Math.cos(fi) + xCenter;
@@ -592,65 +619,246 @@ var app = {
         var iMod = fi;
         var iPrecLength = T.prec.length;
         if(iPrecLength>0){
-          iMod = ((1==iPrecLength)||(2==iPrecLength)) ? Math.random()*fi : 1;
-          iLevel++;
-          var Tprev;
-          for(var i=0,ii=iPrecLength;i<ii;i++){
-              Tprev = app.T[app.getRealIndex(T.prec[i])];
-              app.drawLeaf(Tprev,x,y,(200/iLevel)+10*Math.random()*i,(0.6)*Math.PI*(i+1*iPrecLength)/iPrecLength,iLevel);
-          }
+            iMod = ((1==iPrecLength)||(2==iPrecLength)) ? Math.random()*fi : 1;
+            iLevel++;
+            for(var i=0,ii=iPrecLength;i<ii;i++){
+                var Tprev = app.T[app.getRealIndex(T.prec[i])];
+                var rprev = (200/iLevel)+10*Math.random()*i;
+                var fiprev = (0.6)*Math.PI*(i+1*iPrecLength)/iPrecLength;
+                app.drawLeaf(Tprev,x,y,rprev,fiprev,iLevel);
+            }
         }
 
         iColor = Math.floor(200*T.i/app.iToriginalLength+55);
 
         if (app.displayColors) {
-           g = 255 - iColor;
-           r = 0 + Math.floor(iColor / 2);
+            g = 255 - iColor;
+            r = 0 + Math.floor(iColor / 2);
         } else {
-           r = 0;
-           g = iColor;
+            r = 0;
+            g = iColor;
         }
         b = 0;
 
         // draw branch
-        app.ctx.beginPath();
-        app.ctx.moveTo(xCenter, yCenter);
-        app.ctx.lineTo(x, y);
-        app.ctx.strokeStyle = "rgba("+r+","+g+","+b+",0.3)";
-        app.ctx.stroke();
-        app.ctx.strokeStyle = "rgb(0,0,0)";
+        ctx.beginPath();
+        ctx.moveTo(xCenter, yCenter);
+        ctx.lineTo(x, y);
+        ctx.strokeStyle = "rgba("+r+","+g+","+b+",0.3)";
+        ctx.stroke();
+        ctx.strokeStyle = "rgb(0,0,0)";
 
         // draw leaf
-        app.ctx.beginPath();
-        app.ctx.arc(x,y,20/iLevel,0,Math.PI*2,true);
-        app.ctx.fillStyle = "rgba("+r+","+g+","+b+",1)";
-        app.ctx.fill();
+        ctx.beginPath();
+        ctx.arc(x,y,20/iLevel,0,Math.PI*2,true);
+        ctx.fillStyle = "rgba("+r+","+g+","+b+",1)";
+        ctx.fill();
 
         if (app.bCanvasTextEnabled) {
-           T.drawInfo("d*", x - 5, y, true, true);
+            T.drawInfo("d*", x - 5, y, true, true);
         }
     },
 
-    getRealIndex: function(thisi){
+    getRealIndex: function(ti){
         var iTableIndex;
         for(var i=0;i<app.T.length;i++)
-            if(thisi == app.T[i].i) iTableIndex = i;
+            if(ti == app.T[i].i) iTableIndex = i;
         return iTableIndex;
+    },
+
+    drawXOY: function(){
+        var ctx = app.ctx, w = app.w, h = app.h, f = app.f;
+        ctx.beginPath();
+        ctx.moveTo(f,f);
+        ctx.lineTo(w,f);
+        ctx.moveTo(w-f+f,f);
+        ctx.lineTo(w-f,f-f/3);
+        ctx.moveTo(w-f+f,f);
+        ctx.lineTo(w-f,f+f/3);
+        ctx.stroke();
+        ctx.moveTo(f,f);
+        ctx.lineTo(f,h+f-20);
+        ctx.lineTo(f-f/3,h-f);
+        ctx.moveTo(f,h+f-20);
+        ctx.lineTo(f+f/3,h-f);
+        ctx.stroke();
+    },
+
+    drawScale: function(){
+        var ctx = app.ctx, f = app.f, scale = app.scale;
+        for(var i=1;i<app.wmax;i++){
+            ctx.beginPath();
+            ctx.moveTo(scale*i+f,f-5);
+            ctx.lineTo(scale*i+f,f+5);
+            ctx.stroke();
+        }
+    },
+
+    /* UI */
+
+    switchDisplayLateness: function(){
+        if(app.displayLateness){
+            $("inpL").value = "Lj:N";
+            app.displayLateness = false;
+        } else {
+            $("inpL").value = "Lj:Y";
+            app.displayLateness = true;
+        }
+        app.drawChart();
+    },
+
+    switchDisplayLog: function(){
+        if(app.displayLog){
+            $("inpLog").value = "log:N";
+            app.displayLog = false;
+        } else {
+            $("inpLog").value = "log:Y";
+            app.displayLog = true;
+        }
+        app.drawChart();
+    },
+
+    switchDisplayColors: function(){
+        if(app.displayColors){
+            $("inpK").value = "rgb:N";
+            app.displayColors = false;
+        } else {
+            $("inpK").value = "rgb:Y";
+            app.displayColors = true;
+        }
+        app.drawChart();
+    },
+
+    checkOneLine: function(){
+        app.bOneLine = "chart:M" == $("inpD").value;
+    },
+
+    checkAlgType: function(){
+        app.sAlgorithm = $("inpA").value;
+    },
+
+    switchAlgType: function(){
+        var inpPmin = $("inpPmin");
+        var inpPmax = $("inpPmax");
+        var inpRmin = $("inpRmin");
+        var inpRmax = $("inpRmax");
+        var inpTnum = $("inpTnum");
+        var inpMnum = $("inpMnum");
+
+        var sPrevAlgorithm = $("inpA").value;
+        switch(sPrevAlgorithm){
+            case"P|pj=1,in-tree|Lmax":
+                $("inpA").value = "1||Lmax";
+                app.sAlgorithm = "1||Lmax";
+                inpPmin.disabled = false; inpPmin.value = 1;
+                inpPmax.disabled = false; inpPmax.value = 9;
+                inpRmin.disabled = true;  inpRmin.value = 0;
+                inpRmax.disabled = true;  inpRmax.value = 0;
+                inpMnum.disabled = true;  inpMnum.value = 1;
+                break;
+            case"1||Lmax":
+                $("inpA").value = "1|rj,prm|Lmax";
+                app.sAlgorithm = "1||Lmax";
+                inpPmin.disabled = false; inpPmin.value = 1;
+                inpPmax.disabled = false; inpPmax.value = 9;
+                inpRmin.disabled = false; inpRmin.value = 0;
+                inpRmax.disabled = false; inpRmax.value = 9;
+                inpMnum.disabled = true;  inpMnum.value = 1;
+                break;
+            case"1|rj,prm|Lmax":
+                $("inpA").value = "1|rj,prm,prec|Lmax";
+                app.sAlgorithm = "1|rj,prm,prec|Lmax";
+                inpPmin.disabled = false; inpPmin.value = 1;
+                inpPmax.disabled = false; inpPmax.value = 9;
+                inpRmin.disabled = false; inpRmin.value = 0;
+                inpRmax.disabled = false; inpRmax.value = 9;
+                inpMnum.disabled = true;  inpMnum.value = 1;
+                break;
+            case"1|rj,prm,prec|Lmax":
+                $("inpA").value = "P|pj=1,in-tree|Lmax";
+                app.sAlgorithm = "P|pj=1,in-tree|Lmax";
+                inpPmin.disabled = true;  inpPmin.value = 1;
+                inpPmax.disabled = true;  inpPmax.value = 1;
+                inpRmin.disabled = true;  inpRmin.value = 0;
+                inpRmax.disabled = true;  inpRmax.value = 0;
+                inpTnum.disabled = false; inpTnum.value = 9;
+                inpMnum.disabled = false; inpMnum.value = 3;
+                break;
+        }
+    },
+
+    switchChartType: function(){
+        if("chart:M" == $("inpD").value){
+            $("inpD").value = "chart:T";
+            app.bOneLine = false;
+        } else {
+            $("inpD").value = "chart:M";
+            app.bOneLine = true;
+        }
+        app.drawChart();
+    },
+
+    switchCanvasText: function(){
+        if(app.bCanvasTextEnabled){
+            $("inpC").value = "txt:N";
+            app.bCanvasTextEnabled = false;
+        } else {
+            $("inpC").value = "txt:Y";
+            app.bCanvasTextEnabled = true;
+        }
+        app.drawChart();
+    },
+
+    showInfo: function(){
+        $("log").innerHTML = [
+            "<center>Systemy czasu rzeczywistego, WFMiIS, Informatyka, I sum, 08/09",
+            "2008.12.14, wersja: 1.4",
+            "<h2>Minimalizacja maksymalnego opoznienia",
+            "1||Lmax",
+            "1|rj,prm|Lmax",
+            "1|rj,prm,prec|Lmax",
+            "P|pj=1,in-tree|Lmax</h2>",
+            "",
+            "Z uwagi na wykorzystanie w projekcie elementu graficznego &lt;canvas&gt;",
+            "skrypt dziala tylko w przegladarkach internetowych",
+            "opartych na silniku co najmniej Gecko 1.8 (FireFox od wersji 1.5)</center>"
+        ].join("<br/>");
+    },
+
+    checkRandomTasks: function(){
+        if($("inpR").checked){
+            app.bRandomTasks = true;
+        } else {
+            alert("tylko dane generowane losowo");
+            $("inpR").checked = true;
+            app.bRandomTasks = true;
+        }
+    },
+
+    checkDecimal: function(inp,iMin,iMax,iDefault){
+        var sString = inp.value;
+        if(!app.isNumeric(sString) || (sString<iMin) || (iMax<sString)){
+            inp.value = iDefault;
+            alert("Wymagana liczba calkowita z zakresu ["+iMin+","+iMax+"]");
+            return false;
+        }
+        return true;
+    },
+
+    isNumeric: function(sString){
+        var sValidChars = "0123456789";
+        var sChar;
+        var bResult = true;
+
+        if(sString.length === 0) return false;
+
+        for(i = 0; i < sString.length && bResult === true; i++){
+            sChar = sString.charAt(i);
+            if(sValidChars.indexOf(sChar) == -1) bResult = false;
+        }
+        return bResult;
     }
 };
-
-/* sorting functions */
-function sortEDD(t1,t2){
-    return (t1.d == t2.d) ? t1.r - t2.r : t1.d - t2.d;
-}
-function sortEDDdprec(t1,t2){
-    return (t1.dprec == t2.dprec) ? t1.r - t2.r : t1.dprec - t2.dprec;
-}
-function sortdprec(i1,i2){
-    i1 = app.getRealIndex(i1);
-    i2 = app.getRealIndex(i2);
-    return app.T[i2].dprec - app.T[i1].dprec;
-}
 
 function Task(p,r,d,i){
     this.i = i; // original index
@@ -666,24 +874,25 @@ function Task(p,r,d,i){
     this.waiting = [];  // indexes (this.i) of tasks waiting for this task
     this.iNext = false; // index (this.i) of leaf towards the root
     this.M = 0;         // index of machine which processed this task
+}
 
-    this.calculateLateness = function(){
-        this.L = this.c - this.d;
-    };
+Task.prototype.calculateLateness = function(){
+    this.L = this.c - this.d;
+};
 
-    this.isReady = function(){
-        if(0 === this.prec.length) return true;
-        var bIsReady = true;
-        for(var i=0,ii=this.prec.length;i<ii;i++)
-            bIsReady = (app.T[app.getRealIndex(this.prec[i])].done && bIsReady) ? true : false;
-        return bIsReady;
-    };
+Task.prototype.isReady = function(){
+    if(0 === this.prec.length) return true;
+    var bIsReady = true;
+    for(var i=0,ii=this.prec.length;i<ii;i++)
+        bIsReady = app.T[app.getRealIndex(this.prec[i])].done && bIsReady;
+    return bIsReady;
+};
 
-    this.info = function(sInfo){
-        var aInfo = sInfo.split(",");
-        sInfo = " Task i="+this.i;
-        for(var i=0,ii=aInfo.length;i<ii;i++)
-          switch(aInfo[i]){
+Task.prototype.info = function(sInfo){
+    var aInfo = sInfo.split(",");
+    sInfo = " Task i="+this.i;
+    for(var i=0,ii=aInfo.length;i<ii;i++)
+        switch(aInfo[i]){
             case"p": sInfo += " p="+this.p; break;
             case"r": sInfo += " r="+this.r; break;
             case"d": sInfo += " d="+this.d; break;
@@ -696,295 +905,93 @@ function Task(p,r,d,i){
             case"waiting": sInfo += " waiting=["+this.waiting+"]"; break;
             case"done": sInfo += " done="+this.done; break;
             case"next": sInfo += " next="+this.iNext; break;
-          }
-
-        log(sInfo);
-    };
-
-    this.drawTask = function(r,g,b,bLineToDeadlineMark){
-        // if one line
-        var thisi = this.i;
-        if(app.bOneLine){
-            if("P|pj=1,in-tree|Lmax"== app.sAlgorithm) thisi = this.M;
-            else thisi = 1;
         }
+    log(sInfo);
+};
 
-        var addUP = ((this.i+1)*50)/app.T.length;
+Task.prototype.drawTask = function(r,g,b,bLineToDeadlineMark){
+    var ctx = app.ctx, f = app.f, u = app.u, scale = app.scale;
 
-        // write ri
-        this.drawInfo("r",app.scale*this.r+app.cnvFRAME+5, app.cnvFRAME+20,false);
-
-        // draw Task rectangle
-        app.ctx.beginPath();
-        app.ctx.fillStyle = "rgb("+r+","+g+","+b+")";
-        app.ctx.fillRect(app.scale*this.s+app.cnvFRAME, thisi*20+app.cnvFRAME+app.cnvUP, app.scale*this.p, 20);
-
-        // draw line Task -> Deadline mark
-        if(bLineToDeadlineMark){
-          app.ctx.globalAlpha = 0.3;
-
-          app.ctx.beginPath();
-          app.ctx.moveTo(app.scale*(this.s+this.p)+app.cnvFRAME-3, thisi*20+app.cnvFRAME+app.cnvUP);
-          app.ctx.lineTo(app.scale*(this.s+this.p)+app.cnvFRAME-3, thisi*3 +app.cnvFRAME+addUP);
-          app.ctx.lineTo(app.scale*this.d+app.cnvFRAME, thisi*3 +app.cnvFRAME+addUP);
-          app.ctx.lineTo(app.scale*this.d+app.cnvFRAME, app.cnvFRAME);
-
-          app.ctx.strokeStyle = "rgb("+r+","+g+","+b+")";
-          app.ctx.stroke();
-          app.ctx.strokeStyle = "rgb(0,0,0)";
-
-          app.ctx.globalAlpha = 1;
-        }
-
-        // draw Lateness mark, write Lj
-        if(app.displayLateness && this.L > 0){
-            app.ctx.fillStyle = "rgb(204,255,204)";
-            app.ctx.fillRect(app.scale*this.s+app.cnvFRAME+2, thisi*20+app.cnvFRAME+app.cnvUP+2,7,16);
-            this.drawInfo("L",app.scale*this.s+app.cnvFRAME+20, thisi*20+app.cnvFRAME+app.cnvUP+30,true);
-        }
-
-        // write numbers of Tasks if not line chart
-        if(!app.bOneLine) {
-             canvasWrite(0, thisi*20+app.cnvFRAME+15+app.cnvUP, "T"+this.i,"rgb(0,0,0)",10,true);
-        } else {
-             canvasWrite(0, thisi*20+app.cnvFRAME+15+app.cnvUP, "M"+this.M,"rgb(0,0,0)",10,true);
-             canvasWrite(app.scale*this.s+app.cnvFRAME,
-                         thisi*20+app.cnvFRAME+15+app.cnvUP,     ""+this.i,"rgb(0,0,0)",10,true);
-        }
-    };
-
-    this.drawDeadlineMark = function(r,g,b){
-        app.ctx.globalAlpha = 0.6;
-        app.ctx.beginPath();
-        app.ctx.arc(app.scale*this.d+app.cnvFRAME,app.cnvFRAME,4,0,Math.PI*2,true);
-        app.ctx.fillStyle = "rgb("+r+","+g+","+b+")";
-        app.ctx.fill();
-
-        app.ctx.globalAlpha = 1;
-        this.drawInfo("d",app.scale*this.d+app.cnvFRAME, app.cnvFRAME+20,false,false);
-    };
-
-    this.drawInfo = function(sInfo,x,y,bConst,bForceWrite,sColor){
-        if(!bConst) {
-            y += (this.i*100)/app.T.length;
-        }
-        sColor = sColor || "rgb(0,0,0)";
-        bForceWrite = bForceWrite || false;
-        var info;
-        switch(sInfo){
-            case "p":  info = this.p; break;
-            case "r":  info = this.r; break;
-            case "d":  info = this.d; break;
-            case "d*": info = this.dprec; break;
-            case "s":  info = this.s; break;
-            case "c":  info = this.c; break;
-            case "L":  info = this.L; break;
-        }
-        canvasWrite(x-20, y,   sInfo,     sColor,10,bForceWrite);
-        canvasWrite(x-12, y+5, ""+this.i, sColor, 7,bForceWrite);
-        canvasWrite(x-5,  y,   "="+info,  sColor,10,bForceWrite);
-    };
-}
-
-/* drawing functions */
-function drawXOY(){
-    app.ctx.beginPath();
-    app.ctx.moveTo(app.cnvFRAME,app.cnvFRAME);
-    app.ctx.lineTo(app.cnvWIDTH,app.cnvFRAME);
-    app.ctx.moveTo(app.cnvWIDTH-app.cnvFRAME+app.cnvFRAME,app.cnvFRAME);
-    app.ctx.lineTo(app.cnvWIDTH-app.cnvFRAME,app.cnvFRAME-app.cnvFRAME/3);
-    app.ctx.moveTo(app.cnvWIDTH-app.cnvFRAME+app.cnvFRAME,app.cnvFRAME);
-    app.ctx.lineTo(app.cnvWIDTH-app.cnvFRAME,app.cnvFRAME+app.cnvFRAME/3);
-    app.ctx.stroke();
-    app.ctx.moveTo(app.cnvFRAME,app.cnvFRAME);
-    app.ctx.lineTo(app.cnvFRAME,app.cnvHEIGHT+app.cnvFRAME-20);
-    app.ctx.lineTo(app.cnvFRAME-app.cnvFRAME/3,app.cnvHEIGHT-app.cnvFRAME);
-    app.ctx.moveTo(app.cnvFRAME,app.cnvHEIGHT+app.cnvFRAME-20);
-    app.ctx.lineTo(app.cnvFRAME+app.cnvFRAME/3,app.cnvHEIGHT-app.cnvFRAME);
-    app.ctx.stroke();
-}
-
-function drawScale(){
-    for(var i=1;i<app.maxWidth;i++){
-        app.ctx.beginPath();
-        app.ctx.moveTo(app.scale*i+app.cnvFRAME, app.cnvFRAME-5);
-        app.ctx.lineTo(app.scale*i+app.cnvFRAME, app.cnvFRAME+5);
-        app.ctx.stroke();
+    // if one line
+    var ti = this.i;
+    if(app.bOneLine){
+        if("P|pj=1,in-tree|Lmax" == app.sAlgorithm) ti = this.M;
+        else ti = 1;
     }
-}
 
-function switchDisplayLateness(){
-    if(app.displayLateness){
-        $("inpL").value = "Lj:N";
-        app.displayLateness = false;
+    // separate horizontal parts of deadline lines
+    var ds = ((this.i+1)*50)/app.T.length;
+
+    // write ri
+    this.drawInfo("r",scale*this.r+f+5, f+20,false);
+
+    // draw Task rectangle
+    ctx.beginPath();
+    ctx.fillStyle = "rgb("+r+","+g+","+b+")";
+    ctx.fillRect(scale*this.s+f, ti*20+f+u, scale*this.p, 20);
+
+    // draw line Task -> Deadline mark
+    if(bLineToDeadlineMark){
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.moveTo(scale*(this.s+this.p)+f-3, ti*20+f+u);
+        ctx.lineTo(scale*(this.s+this.p)+f-3, ti*3 +f+ds);
+        ctx.lineTo(scale*this.d+f, ti*3 +f+ds);
+        ctx.lineTo(scale*this.d+f, f);
+        ctx.strokeStyle = "rgb("+r+","+g+","+b+")";
+        ctx.stroke();
+        ctx.strokeStyle = "rgb(0,0,0)";
+        ctx.globalAlpha = 1;
+    }
+
+    // draw Lateness mark, write Lj
+    if(app.displayLateness && this.L > 0){
+        ctx.fillStyle = "rgb(204,255,204)";
+        ctx.fillRect(scale*this.s+f+2, ti*20+f+u+2,7,16);
+        this.drawInfo("L",scale*this.s+f+20, ti*20+f+u+30,true);
+    }
+
+    // write numbers of Tasks if not line chart
+    if(!app.bOneLine) {
+        ctx.write(0,ti*20+f+15+u,"T"+this.i,"rgb(0,0,0)",10,true);
     } else {
-        $("inpL").value = "Lj:Y";
-        app.displayLateness = true;
+        ctx.write(0,ti*20+f+15+u,"M"+this.M,"rgb(0,0,0)",10,true);
+        ctx.write(scale*this.s+f,ti*20+f+15+u,""+this.i,"rgb(0,0,0)",10,true);
     }
-    app.drawChart();
-}
+};
 
-function switchDisplayLog(){
-    if(app.displayLog){
-        $("inpLog").value = "log:N";
-        app.displayLog = false;
-    } else {
-        $("inpLog").value = "log:Y";
-        app.displayLog = true;
+Task.prototype.drawDeadlineMark = function(r,g,b){
+    var ctx = app.ctx, f = app.f, scale = app.scale;
+    ctx.globalAlpha = 0.6;
+    ctx.beginPath();
+    ctx.arc(scale*this.d+f,f,4,0,Math.PI*2,true);
+    ctx.fillStyle = "rgb("+r+","+g+","+b+")";
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    this.drawInfo("d",scale*this.d+f,f+20,false,false);
+};
+
+Task.prototype.drawInfo = function(sInfo,x,y,bConst,bForceWrite,sColor){
+    if(!bConst) {
+        y += (this.i*100)/app.T.length;
     }
-    app.drawChart();
-}
-
-function switchDisplayColors(){
-    if(app.displayColors){
-        $("inpK").value = "rgb:N";
-        app.displayColors = false;
-    } else {
-        $("inpK").value = "rgb:Y";
-        app.displayColors = true;
+    sColor = sColor || "rgb(0,0,0)";
+    bForceWrite = bForceWrite || false;
+    var info;
+    switch(sInfo){
+        case "p":  info = this.p; break;
+        case "r":  info = this.r; break;
+        case "d":  info = this.d; break;
+        case "d*": info = this.dprec; break;
+        case "s":  info = this.s; break;
+        case "c":  info = this.c; break;
+        case "L":  info = this.L; break;
     }
-    app.drawChart();
-}
-
-function checkOneLine(){
-    app.bOneLine = ("chart:M" == $("inpD").value) ? true : false;
-}
-
-function checkAlgType(){
-    app.sAlgorithm = $("inpA").value;
-}
-
-function switchAlgType(){
-    var inpPmin = $("inpPmin");
-    var inpPmax = $("inpPmax");
-    var inpRmin = $("inpRmin");
-    var inpRmax = $("inpRmax");
-    var inpTnum = $("inpTnum");
-    var inpMnum = $("inpMnum");
-
-    var sPrevAlgorithm = $("inpA").value;
-    switch(sPrevAlgorithm){
-        case"P|pj=1,in-tree|Lmax":
-            $("inpA").value = "1||Lmax";
-            app.sAlgorithm = "1||Lmax";
-            inpPmin.disabled = false; inpPmin.value = 1;
-            inpPmax.disabled = false; inpPmax.value = 9;
-            inpRmin.disabled = true;  inpRmin.value = 0;
-            inpRmax.disabled = true;  inpRmax.value = 0;
-            inpMnum.disabled = true;  inpMnum.value = 1;
-            break;
-        case"1||Lmax":
-            $("inpA").value = "1|rj,prm|Lmax";
-            app.sAlgorithm = "1||Lmax";
-            inpPmin.disabled = false; inpPmin.value = 1;
-            inpPmax.disabled = false; inpPmax.value = 9;
-            inpRmin.disabled = false; inpRmin.value = 0;
-            inpRmax.disabled = false; inpRmax.value = 9;
-            inpMnum.disabled = true;  inpMnum.value = 1;
-            break;
-        case"1|rj,prm|Lmax":
-            $("inpA").value = "1|rj,prm,prec|Lmax";
-            app.sAlgorithm = "1|rj,prm,prec|Lmax";
-            inpPmin.disabled = false; inpPmin.value = 1;
-            inpPmax.disabled = false; inpPmax.value = 9;
-            inpRmin.disabled = false; inpRmin.value = 0;
-            inpRmax.disabled = false; inpRmax.value = 9;
-            inpMnum.disabled = true;  inpMnum.value = 1;
-            break;
-      case"1|rj,prm,prec|Lmax":
-            $("inpA").value = "P|pj=1,in-tree|Lmax";
-            app.sAlgorithm = "P|pj=1,in-tree|Lmax";
-            inpPmin.disabled = true;  inpPmin.value = 1;
-            inpPmax.disabled = true;  inpPmax.value = 1;
-            inpRmin.disabled = true;  inpRmin.value = 0;
-            inpRmax.disabled = true;  inpRmax.value = 0;
-            inpTnum.disabled = false; inpTnum.value = 9;
-            inpMnum.disabled = false; inpMnum.value = 3;
-            break;
-    }
-}
-function switchChartType(){
-    if("chart:M" == $("inpD").value){
-        $("inpD").value = "chart:T";
-        app.bOneLine = false;
-    } else {
-        $("inpD").value = "chart:M";
-        app.bOneLine = true;
-    }
-    app.drawChart();
-}
-
-function switchCanvasText(){
-    if(app.bCanvasTextEnabled){
-        $("inpC").value = "txt:N";
-        app.bCanvasTextEnabled = false;
-    } else {
-        $("inpC").value = "txt:Y";
-        app.bCanvasTextEnabled = true;
-    }
-    app.drawChart();
-}
-
-function checkRandomTasks(){
-    if($("inpR").checked){
-        app.bRandomTasks = true;
-    } else {
-        alert("tylko dane generowane losowo");
-        $("inpR").checked = true;
-        app.bRandomTasks = true;
-    }
-}
-
-function canvasWrite(x,y,sText,sColor,fontsize,bForceWrite){
-    if(app.bCanvasTextEnabled || bForceWrite){
-        fontsize = fontsize + 2 || 8;
-        app.ctx.font = "normal normal normal "+fontsize+"px sans-serif";
-        app.ctx.fillStyle = sColor || "rgb(0,0,0)";
-        app.ctx.fillText(sText,++x,y);
-        // set default fillStyle to black
-        app.ctx.fillStyle = "rgb(0,0,0)";
-    }
-}
-
-function checkDecimal(inp,iMin,iMax,iDefault){
-    var sString = inp.value;
-    if(!isNumeric(sString) || (sString<iMin) || (iMax<sString)){
-        inp.value = iDefault;
-        alert("Wymagana liczba calkowita z zakresu ["+iMin+","+iMax+"]");
-        return false;
-    }
-    return true;
-}
-
-function isNumeric(sString){
-    var sValidChars = "0123456789";
-    var sChar;
-    var bResult = true;
-
-    if(sString.length === 0) return false;
-
-    for(i = 0; i < sString.length && bResult === true; i++){
-        sChar = sString.charAt(i);
-        if(sValidChars.indexOf(sChar) == -1) bResult = false;
-    }
-    return bResult;
-}
-
-function showInfo(){
-    var sTxt = [];
-    sTxt.push("<center>Systemy czasu rzeczywistego, WFMiIS, Informatyka, I sum, 08/09");
-    sTxt.push("2008.12.14, wersja: 1.4");
-    sTxt.push("<h2>Minimalizacja maksymalnego opoznienia");
-    sTxt.push("1||Lmax");
-    sTxt.push("1|rj,prm|Lmax");
-    sTxt.push("1|rj,prm,prec|Lmax");
-    sTxt.push("P|pj=1,in-tree|Lmax</h2>");
-    sTxt.push("");
-    sTxt.push("Z uwagi na wykorzystanie w projekcie elementu graficznego &lt;canvas&gt;");
-    sTxt.push("skrypt dziala tylko w przegladarkach internetowych");
-    sTxt.push("opartych na silniku co najmniej Gecko 1.8 (FireFox od wersji 1.5)");
-    app.log.innerHTML = sTxt.join("<br/>");
-}
+    var ctx = app.ctx;
+    ctx.write(x-20, y,   sInfo,     sColor,10,bForceWrite);
+    ctx.write(x-12, y+5, ""+this.i, sColor, 7,bForceWrite);
+    ctx.write(x-5,  y,   "="+info,  sColor,10,bForceWrite);
+};
 
 /* log functions */
 function log(sText,bBold,iIndent){
@@ -1009,9 +1016,9 @@ function logbr(){
     log("",false);
 }
 function outputLog(){
-    if(app.displayLog) app.log.innerHTML += app.buf;
+    if(app.displayLog) $("log").innerHTML += app.buf;
 }
 function clearLog(){
+    $("log").innerHTML = "";
     app.buf = "";
-    app.log.innerHTML = "";
 }
