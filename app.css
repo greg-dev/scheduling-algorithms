@@ -17,3 +17,7 @@ input[disabled]{background-color:#111111; color:#009900;}
 span.spnLow{font-size:10px; color:#33DD33;}
 a{color:#CCFFCC; text-decoration:none;}
 a:hover{color:white;}
+::-moz-selection{background-color:inherit; color:inherit;}
+::selection{background-color:inherit; color:inherit;}
+#tdLog ::-moz-selection{color:#CCFFCC;}
+#tdLog ::selection{color:#CCFFCC;}
