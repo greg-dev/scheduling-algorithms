@@ -572,6 +572,7 @@ var app = {
     drawChart: function(){
         // clear previous content
         app.ctx.clearRect(0,0,app.w,app.h);
+        app.ctx.oxlabels = [];
         // scale...
         app.wmax = 0;
         app.scale = 1;
@@ -582,7 +583,6 @@ var app = {
         app.scale = (app.w-2*app.f)/app.wmax;
 
         app.drawXOY();
-        app.drawScale();
 
         // draw all tasks
         var bSplitted,aRGB;
@@ -667,7 +667,7 @@ var app = {
     },
 
     drawXOY: function(){
-        var ctx = app.ctx, w = app.w, h = app.h, f = app.f;
+        var ctx = app.ctx, w = app.w, h = app.h, f = app.f, scale = app.scale;
         ctx.beginPath();
         ctx.moveTo(f,f);
         ctx.lineTo(w,f);
@@ -682,10 +682,8 @@ var app = {
         ctx.moveTo(f,h+f-20);
         ctx.lineTo(f+f/3,h-f);
         ctx.stroke();
-    },
 
-    drawScale: function(){
-        var ctx = app.ctx, f = app.f, scale = app.scale;
+        // horizontal scale
         for(var i=1;i<app.wmax;i++){
             ctx.beginPath();
             ctx.moveTo(scale*i+f,f-5);
@@ -955,7 +953,10 @@ Task.prototype.drawTask = function(r,g,b,bLineToDeadlineMark){
     if(!app.bOneLine) {
         ctx.write(0,ti*20+f+15+u,"T"+this.i,"rgb(0,0,0)",10,true);
     } else {
-        ctx.write(0,ti*20+f+15+u,"M"+this.M,"rgb(0,0,0)",10,true);
+        if(!ctx.oxlabels[this.M]){
+            ctx.oxlabels[this.M] = true;
+            ctx.write(0,ti*20+f+15+u,"M"+this.M,"rgb(0,0,0)",10,true);
+        }
         ctx.write(scale*this.s+f,ti*20+f+15+u,""+this.i,"rgb(0,0,0)",10,true);
     }
 };
