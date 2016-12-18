@@ -606,27 +606,28 @@ var app = {
 
     drawChartTree: function(){
         var Troot = app.T[app.getRealIndex(app.iTroot)];
-        app.drawLeaf(Troot,app.w-app.f-10,120,0,0,1);
+        app.drawLeaf(Troot,app.w-50,app.h-20,10,Math.PI*5/4,0);
     },
 
-    drawLeaf: function(T,xCenter,yCenter,r,fi,iLevel){
+    drawLeaf: function(T,xCenter,yCenter,r,fiDir,iLevel,fiLimit){
         var ctx = app.ctx;
-        var LEVEL = 35;
-
-        var x = r*Math.cos(fi) + xCenter;
-        var y = r*Math.sin(fi) + yCenter;
-
-        var iMod = fi;
+        var x = r*Math.cos(fiDir) + xCenter;
+        var y = r*Math.sin(fiDir) + yCenter;
+        var fiMax = iLevel ? fiLimit : Math.PI*0.35;
+        var fiMin = fiDir - fiMax/2;
         var iPrecLength = T.prec.length;
-        if(iPrecLength>0){
-            iMod = ((1==iPrecLength)||(2==iPrecLength)) ? Math.random()*fi : 1;
-            iLevel++;
-            for(var i=0,ii=iPrecLength;i<ii;i++){
-                var Tprev = app.T[app.getRealIndex(T.prec[i])];
-                var rprev = (200/iLevel)+10*Math.random()*i;
-                var fiprev = (0.6)*Math.PI*(i+1*iPrecLength)/iPrecLength;
-                app.drawLeaf(Tprev,x,y,rprev,fiprev,iLevel);
+        r = 30 - iLevel*15 + iPrecLength*10;
+        for(var i=0,ii=iPrecLength;i<ii;i++){
+            var Tprev = app.T[app.getRealIndex(T.prec[i])];
+            if(iPrecLength > 1){
+                var fiPart = fiMax/(iPrecLength-1);
+                if(fiPart < 0.35) fiPart = 0.35;
+                fiDir = fiMin + fiPart*i;
+                r = r + i*14;
             }
+            if(r < 40) r = 40;
+            if(r > 80) r = 80;
+            app.drawLeaf(Tprev,x,y,r,fiDir,iLevel+1,fiMax/iPrecLength);
         }
 
         iColor = Math.floor(200*T.i/app.iToriginalLength+55);
@@ -650,12 +651,12 @@ var app = {
 
         // draw leaf
         ctx.beginPath();
-        ctx.arc(x,y,20/iLevel,0,Math.PI*2,true);
+        ctx.arc(x,y,Math.abs(10-1.3*(iLevel+1)),0,Math.PI*2,true);
         ctx.fillStyle = "rgba("+r+","+g+","+b+",1)";
         ctx.fill();
 
         if (app.bCanvasTextEnabled) {
-            T.drawInfo("d*", x - 5, y, true, true);
+            T.drawInfo("d*", x, y+15-iLevel, true, true);
         }
     },
 
