@@ -65,6 +65,7 @@ var app = {
             }
         };
 
+        app.setAlgorithm("P|pj=1,in-tree|Lmax");
         app.start();
         app.showInfo();
     },
@@ -78,7 +79,6 @@ var app = {
         clearLog();
         app.checkOneLine();
         app.checkRandomTasks();
-        app.checkAlgType();
 
         app.generateTasks();
 
@@ -188,6 +188,7 @@ var app = {
             rmax = parseInt($("inpRmax").value);
             dmin = parseInt($("inpDmin").value);
             dmax = parseInt($("inpDmax").value);
+            app.iM = parseInt($("inpMnum").value);
 
             for(var i=1;i<=n;i++){
                 pRand = Math.floor(Math.random()*(pmax-pmin+1))+pmin;
@@ -218,8 +219,6 @@ var app = {
         // jesli in-tree, wylosuj kolejnosc
         if("P|pj=1,in-tree|Lmax" == app.sAlgorithm){
             var t,s;
-            app.iM = parseInt($("inpMnum").value);
-
             var aTempT = [];
             var aTempS = [];
 
@@ -751,41 +750,22 @@ var app = {
         app.bOneLine = "chart:M" == $("inpD").value;
     },
 
-    checkAlgType: function(){
-        app.sAlgorithm = $("inpA").value;
-    },
-
-    switchAlgType: function(){
+    setAlgorithm: function(sAlgorithm){
         var inpPmin = $("inpPmin");
         var inpPmax = $("inpPmax");
         var inpRmin = $("inpRmin");
         var inpRmax = $("inpRmax");
-        var inpTnum = $("inpTnum");
         var inpMnum = $("inpMnum");
 
-        var sPrevAlgorithm = $("inpA").value;
-        switch(sPrevAlgorithm){
-            case"P|pj=1,in-tree|Lmax":
-                $("inpA").value = "1||Lmax";
-                app.sAlgorithm = "1||Lmax";
+        switch(sAlgorithm){
+            case"1||Lmax":
                 inpPmin.disabled = false; inpPmin.value = 1;
                 inpPmax.disabled = false; inpPmax.value = 9;
                 inpRmin.disabled = true;  inpRmin.value = 0;
                 inpRmax.disabled = true;  inpRmax.value = 0;
                 inpMnum.disabled = true;  inpMnum.value = 1;
                 break;
-            case"1||Lmax":
-                $("inpA").value = "1|rj,prm|Lmax";
-                app.sAlgorithm = "1||Lmax";
-                inpPmin.disabled = false; inpPmin.value = 1;
-                inpPmax.disabled = false; inpPmax.value = 9;
-                inpRmin.disabled = false; inpRmin.value = 0;
-                inpRmax.disabled = false; inpRmax.value = 9;
-                inpMnum.disabled = true;  inpMnum.value = 1;
-                break;
             case"1|rj,prm|Lmax":
-                $("inpA").value = "1|rj,prm,prec|Lmax";
-                app.sAlgorithm = "1|rj,prm,prec|Lmax";
                 inpPmin.disabled = false; inpPmin.value = 1;
                 inpPmax.disabled = false; inpPmax.value = 9;
                 inpRmin.disabled = false; inpRmin.value = 0;
@@ -793,15 +773,30 @@ var app = {
                 inpMnum.disabled = true;  inpMnum.value = 1;
                 break;
             case"1|rj,prm,prec|Lmax":
-                $("inpA").value = "P|pj=1,in-tree|Lmax";
-                app.sAlgorithm = "P|pj=1,in-tree|Lmax";
+                inpPmin.disabled = false; inpPmin.value = 1;
+                inpPmax.disabled = false; inpPmax.value = 9;
+                inpRmin.disabled = false; inpRmin.value = 0;
+                inpRmax.disabled = false; inpRmax.value = 9;
+                inpMnum.disabled = true;  inpMnum.value = 1;
+                break;
+            case"P|pj=1,in-tree|Lmax":
                 inpPmin.disabled = true;  inpPmin.value = 1;
                 inpPmax.disabled = true;  inpPmax.value = 1;
                 inpRmin.disabled = true;  inpRmin.value = 0;
                 inpRmax.disabled = true;  inpRmax.value = 0;
-                inpTnum.disabled = false; inpTnum.value = 9;
-                inpMnum.disabled = false; inpMnum.value = 3;
+                inpMnum.disabled = false; inpMnum.value = 5;
                 break;
+        }
+        app.sAlgorithm = sAlgorithm;
+        $("inpA").value = sAlgorithm;
+    },
+
+    switchAlgorithm: function(){
+        switch($("inpA").value){
+            case"1||Lmax":  app.setAlgorithm("1|rj,prm|Lmax"); break;
+            case"1|rj,prm|Lmax": app.setAlgorithm("1|rj,prm,prec|Lmax"); break;
+            case"1|rj,prm,prec|Lmax": app.setAlgorithm("P|pj=1,in-tree|Lmax"); break;
+            case"P|pj=1,in-tree|Lmax": app.setAlgorithm("1||Lmax"); break;
         }
     },
 
