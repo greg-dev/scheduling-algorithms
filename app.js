@@ -487,9 +487,9 @@ var app = {
             T = app.T[iIndexToProcessing];
             T.s = t;
             T.c = T.s+T.p;
-            T.M = i;
+            T.M = i+1;
             T.done = true;
-            log2("T["+T.i+"] completed on M["+i+"]");
+            log2("T["+T.i+"] completed on M["+T.M+"]");
             if(T.iNext === false){
                 log1("all tasks completed");
             } else {
@@ -572,7 +572,18 @@ var app = {
     drawChart: function(){
         // clear previous content
         app.ctx.clearRect(0,0,app.w,app.h);
-        app.ctx.oxlabels = [];
+        app.ctx.buffer = {
+            'p': [],
+            'r': [],
+            'rj': [],
+            'd': [],
+            'd*': [],
+            's': [],
+            'c': [],
+            'L': [],
+            'T': [],
+            'M': []
+        };
         // scale...
         app.wmax = 0;
         app.scale = 1;
@@ -690,6 +701,14 @@ var app = {
             ctx.moveTo(scale*i+f,f-5);
             ctx.lineTo(scale*i+f,f+5);
             ctx.stroke();
+        }
+    },
+
+    drawXOYlabel: function(sInfo,i,x,y,sText){
+        var ctx = app.ctx;
+        if(!ctx.buffer[sInfo][i]){
+            ctx.buffer[sInfo][i] = true;
+            ctx.write(x,y,sText,"rgb(0,0,0)",10,true);
         }
     },
 
@@ -922,7 +941,11 @@ Task.prototype.drawTask = function(r,g,b,bLineToDeadlineMark){
     var ds = ((this.i+1)*50)/app.T.length;
 
     // write ri
-    this.drawInfo("r",scale*this.r+f+5, f+20,false);
+    if("P|pj=1,in-tree|Lmax" == app.sAlgorithm || "1||Lmax" == app.sAlgorithm){
+        this.drawInfo("rj",scale*this.r+f+5, f+20,false);
+    } else {
+        this.drawInfo("r",scale*this.r+f+5, f+20,false);
+    }
 
     // draw Task rectangle
     ctx.beginPath();
@@ -947,17 +970,18 @@ Task.prototype.drawTask = function(r,g,b,bLineToDeadlineMark){
     if(app.displayLateness && this.L > 0){
         ctx.fillStyle = "rgb(204,255,204)";
         ctx.fillRect(scale*this.s+f+2, ti*20+f+u+2,7,16);
-        this.drawInfo("L",scale*this.s+f+20, ti*20+f+u+30,true);
+        if(!app.bOneLine) {
+            this.drawInfo("L",scale*this.s+f+20, (1+ti)*20+f+u+10,true);
+        } else {
+            this.drawInfo("L",scale*this.s+f+20, (app.iM+1)*20+f+u+10,true);
+        }
     }
 
-    // write numbers of Tasks if not line chart
     if(!app.bOneLine) {
-        ctx.write(0,ti*20+f+15+u,"T"+this.i,"rgb(0,0,0)",10,true);
+        app.drawXOYlabel("T",this.i,0,ti*20+f+15+u,"T"+this.i);
     } else {
-        if(!ctx.oxlabels[this.M]){
-            ctx.oxlabels[this.M] = true;
-            ctx.write(0,ti*20+f+15+u,"M"+this.M,"rgb(0,0,0)",10,true);
-        }
+        app.drawXOYlabel("M",this.M,0,ti*20+f+15+u,"M"+this.M);
+        // write numbers of Tasks if not line chart
         ctx.write(scale*this.s+f,ti*20+f+15+u,""+this.i,"rgb(0,0,0)",10,true);
     }
 };
@@ -974,15 +998,16 @@ Task.prototype.drawDeadlineMark = function(r,g,b){
 };
 
 Task.prototype.drawInfo = function(sInfo,x,y,bConst,bForceWrite,sColor){
-    if(!bConst) {
-        y += (this.i*100)/app.T.length;
-    }
     sColor = sColor || "rgb(0,0,0)";
     bForceWrite = bForceWrite || false;
     var info;
+    var sParam = sInfo;
+    var sIndex = ""+this.i;
+    var ti = this.i;
     switch(sInfo){
         case "p":  info = this.p; break;
         case "r":  info = this.r; break;
+        case "rj": info = this.r; sParam = "r"; sIndex = "j"; ti = 0; break;
         case "d":  info = this.d; break;
         case "d*": info = this.dprec; break;
         case "s":  info = this.s; break;
@@ -990,9 +1015,15 @@ Task.prototype.drawInfo = function(sInfo,x,y,bConst,bForceWrite,sColor){
         case "L":  info = this.L; break;
     }
     var ctx = app.ctx;
-    ctx.write(x-20, y,   sInfo,     sColor,10,bForceWrite);
-    ctx.write(x-12, y+5, ""+this.i, sColor, 7,bForceWrite);
-    ctx.write(x-5,  y,   "="+info,  sColor,10,bForceWrite);
+    if(!bConst) {
+        y += (this.i*100)/app.T.length;
+    }
+    if(!ctx.buffer[sInfo][ti]){
+        ctx.buffer[sInfo][ti] = true;
+        ctx.write(x-20, y,   sParam,    sColor,10,bForceWrite);
+        ctx.write(x-12, y+5, sIndex,    sColor, 7,bForceWrite);
+        ctx.write(x-5,  y,   "="+info,  sColor,10,bForceWrite);
+    }
 };
 
 /* log functions */
