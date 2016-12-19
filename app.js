@@ -606,8 +606,12 @@ var app = {
         }
         for(var i=0,ii=app.T.length;i<ii;i++){
             aRGB = app.getColor(i);
-            app.T[i].drawTask(aRGB[0],aRGB[1],aRGB[2],iMax[i]);
+            app.T[i].drawDeadlineLine(aRGB[0],aRGB[1],aRGB[2]);
             app.T[i].drawDeadlineMark(aRGB[0],aRGB[1],aRGB[2]);
+        }
+        for(var i=0,ii=app.T.length;i<ii;i++){
+            aRGB = app.getColor(i);
+            app.T[i].drawTask(aRGB[0],aRGB[1],aRGB[2],iMax[i]);
         }
 
         if("P|pj=1,in-tree|Lmax"== app.sAlgorithm)
@@ -922,7 +926,7 @@ Task.prototype.info = function(sInfo){
     log(sInfo);
 };
 
-Task.prototype.drawTask = function(r,g,b,bLineToDeadlineMark){
+Task.prototype.drawTask = function(r,g,b){
     var ctx = app.ctx, f = app.f, u = app.u, scale = app.scale;
 
     // if one line
@@ -931,9 +935,6 @@ Task.prototype.drawTask = function(r,g,b,bLineToDeadlineMark){
         if("P|pj=1,in-tree|Lmax" == app.sAlgorithm) ti = this.M;
         else ti = 1;
     }
-
-    // separate horizontal parts of deadline lines
-    var ds = ((this.i+1)*50)/app.T.length;
 
     // write ri
     if("P|pj=1,in-tree|Lmax" == app.sAlgorithm || "1||Lmax" == app.sAlgorithm){
@@ -946,20 +947,6 @@ Task.prototype.drawTask = function(r,g,b,bLineToDeadlineMark){
     ctx.beginPath();
     ctx.fillStyle = "rgb("+r+","+g+","+b+")";
     ctx.fillRect(scale*this.s+f, ti*20+f+u, scale*this.p, 20);
-
-    // draw line Task -> Deadline mark
-    if(bLineToDeadlineMark){
-        ctx.globalAlpha = 0.3;
-        ctx.beginPath();
-        ctx.moveTo(scale*(this.s+this.p)+f-3, ti*20+f+u);
-        ctx.lineTo(scale*(this.s+this.p)+f-3, ti*3 +f+ds);
-        ctx.lineTo(scale*this.d+f, ti*3 +f+ds);
-        ctx.lineTo(scale*this.d+f, f);
-        ctx.strokeStyle = "rgb("+r+","+g+","+b+")";
-        ctx.stroke();
-        ctx.strokeStyle = "rgb(0,0,0)";
-        ctx.globalAlpha = 1;
-    }
 
     // draw Lateness mark, write Lj
     if(app.displayLateness && this.L > 0){
@@ -979,6 +966,28 @@ Task.prototype.drawTask = function(r,g,b,bLineToDeadlineMark){
         // write numbers of Tasks if not line chart
         ctx.write(scale*this.s+f,ti*20+f+15+u,""+this.i,"rgb(0,0,0)",10,true);
     }
+};
+
+Task.prototype.drawDeadlineLine = function(r,g,b){
+    var ctx = app.ctx, f = app.f, u = app.u, scale = app.scale;
+    // separate horizontal parts of deadline lines
+    var ds = ((this.i+1)*50)/app.T.length;
+    // if one line
+    var ti = this.i;
+    if(app.bOneLine){
+        if("P|pj=1,in-tree|Lmax" == app.sAlgorithm) ti = this.M;
+        else ti = 1;
+    }
+    ctx.globalAlpha = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(scale*(this.s+this.p)+f-ti, ti*20+f+u);
+    ctx.lineTo(scale*(this.s+this.p)+f-ti, ti*10 +f+ds);
+    ctx.lineTo(scale*this.d+f, ti*10 +f+ds);
+    ctx.lineTo(scale*this.d+f, f);
+    ctx.strokeStyle = "rgb("+r+","+g+","+b+")";
+    ctx.stroke();
+    ctx.strokeStyle = "rgb(0,0,0)";
+    ctx.globalAlpha = 1;
 };
 
 Task.prototype.drawDeadlineMark = function(r,g,b){
