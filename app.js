@@ -993,8 +993,8 @@ Task.prototype.drawTask = function(r,g,b){
     }
 
     // write ri
-    if("P|pj=1,in-tree|Lmax" == app.sAlgorithm || "1||Lmax" == app.sAlgorithm){
-        this.drawInfo("rj",scale*this.r+f+5, f+20,false);
+    if(["1||Lmax", "P|pj=1,in-tree|Lmax"].inArray(app.sAlgorithm)){
+        this.drawInfo("rj",scale*this.r+f+5, f+20,true);
     } else {
         this.drawInfo("r",scale*this.r+f+5, f+20,false);
     }
@@ -1077,7 +1077,7 @@ Task.prototype.drawInfo = function(sInfo,x,y,bConst,bForceWrite,sColor){
     var sIndex = ""+this.i;
     var ti = this.i;
     if(!bConst) {
-        y += (this.i*100)/app.T.length;
+        y += (ti*100)/app.T.length;
     }
     var dx1 = x-20, dy1 = y;
     var dx2 = x-14, dy2 = y+5;
