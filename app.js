@@ -66,6 +66,48 @@ var app = {
             }
         };
 
+        app.ctx.writeBuffered = function(){
+            var buffer = app.ctx.buffer;
+            var p,v,b,ti,i;
+            var concatIndexes = ["r","d"];
+            // new buffer structure with the same values for the same params
+            // converted into one info with indexes comma separated:
+            // dx=n, dy=n, dz=n    =>    dx,y,z=n
+            var buf = {};
+            for(p in buffer) if(buffer.hasOwnProperty(p)){
+                buf[p] = {};
+                for(ti in buffer[p]) if(buffer[p].hasOwnProperty(ti)) {
+                    b = buffer[p][ti];
+                    if(typeof b === "object") {
+                        v = b[2][2];
+                        i = concatIndexes.inArray(p) ? 0 : b[1][2];
+                        if(typeof buf[p][v] === "undefined"){
+                            buf[p][v] = [];
+                        }
+                        if(typeof buf[p][v][i] === "undefined"){
+                            buf[p][v][i] = [b[0],b[1],b[2]];
+                            buf[p][v][i][2][2] = "="+buf[p][v][i][2][2];
+                        } else {
+                            buf[p][v][i][1][2] += ","+ti;
+                            buf[p][v][i][2][0] += 7;
+                        }
+                    }
+                }
+            }
+
+            var ctx = app.ctx;
+            for(p in buf) if(buf.hasOwnProperty(p)){
+                for(v in buf[p]) if(buf[p].hasOwnProperty(v)) {
+                    for(i in buf[p][v]) if(buf[p][v].hasOwnProperty(i)) {
+                        b = buf[p][v][i];
+                        ctx.write.apply(ctx,b[0]);
+                        ctx.write.apply(ctx,b[1]);
+                        ctx.write.apply(ctx,b[2]);
+                    }
+                }
+            }
+        }
+
         app.setAlgorithm("P|pj=1,in-tree|Lmax");
         app.start();
         app.showInfo();
@@ -617,6 +659,8 @@ var app = {
 
         if("P|pj=1,in-tree|Lmax"== app.sAlgorithm)
             app.drawChartTree();
+
+        app.ctx.writeBuffered();
     },
 
     drawChartTree: function(){
@@ -1032,25 +1076,28 @@ Task.prototype.drawInfo = function(sInfo,x,y,bConst,bForceWrite,sColor){
     var sParam = sInfo;
     var sIndex = ""+this.i;
     var ti = this.i;
+    if(!bConst) {
+        y += (this.i*100)/app.T.length;
+    }
+    var dx1 = x-20, dy1 = y;
+    var dx2 = x-14, dy2 = y+5;
+    var dx3 = x-6,  dy3 = y;
     switch(sInfo){
         case "p":  info = this.p; break;
-        case "r":  info = this.r; break;
-        case "rj": info = this.r; sParam = "r"; sIndex = "j"; ti = 0; break;
+        case "r":  info = this.r; dx1+=3; break;
+        case "rj": info = this.r; dx1+=3; sParam = "r"; sIndex = "j"; ti = 0; break;
         case "d":  info = this.d; break;
         case "d*": info = this.dprec; break;
         case "s":  info = this.s; break;
         case "c":  info = this.c; break;
         case "L":  info = this.L; break;
     }
-    var ctx = app.ctx;
-    if(!bConst) {
-        y += (this.i*100)/app.T.length;
-    }
-    if(!ctx.buffer[sInfo][ti]){
-        ctx.buffer[sInfo][ti] = true;
-        ctx.write(x-20, y,   sParam,    sColor,10,bForceWrite);
-        ctx.write(x-12, y+5, sIndex,    sColor, 7,bForceWrite);
-        ctx.write(x-5,  y,   "="+info,  sColor,10,bForceWrite);
+    if(!app.ctx.buffer[sInfo][ti]){
+        app.ctx.buffer[sInfo][ti] = [
+            [dx1, dy1, sParam, sColor,9,bForceWrite],
+            [dx2, dy2, sIndex, sColor,7,bForceWrite],
+            [dx3, dy3,   info, sColor,9,bForceWrite]
+        ];
     }
 };
 
