@@ -41,6 +41,7 @@ var app = {
     displayLog: true,
     displayColors: false,
     displayLateness: true,
+    sDeadlineStyle: "d:p",
     bOneLine: false,
     bRandomTasks: false,
     bCanvasTextEnabled: false,
@@ -750,8 +751,19 @@ var app = {
         app.drawChart();
     },
 
+    switchDeadlineStyle: function(){
+        var inpD = $("inpD");
+        switch(app.sDeadlineStyle){
+            case"d:n": app.sDeadlineStyle = "d:p"; inpD.value = "d:p"; break;
+            case"d:p": app.sDeadlineStyle = "d:b"; inpD.value = "d:b"; break;
+            case"d:b": app.sDeadlineStyle = "d:s"; inpD.value = "d:s"; break;
+            case"d:s": app.sDeadlineStyle = "d:n"; inpD.value = "d:n"; break;
+        }
+        app.drawChart();
+    },
+
     checkOneLine: function(){
-        app.bOneLine = "chart:M" == $("inpD").value;
+        app.bOneLine = "chart:M" == $("inpC").value;
     },
 
     setAlgorithm: function(sAlgorithm){
@@ -805,11 +817,11 @@ var app = {
     },
 
     switchChartType: function(){
-        if("chart:M" == $("inpD").value){
-            $("inpD").value = "chart:T";
+        if("chart:M" == $("inpC").value){
+            $("inpC").value = "chart:T";
             app.bOneLine = false;
         } else {
-            $("inpD").value = "chart:M";
+            $("inpC").value = "chart:M";
             app.bOneLine = true;
         }
         app.drawChart();
@@ -817,10 +829,10 @@ var app = {
 
     switchCanvasText: function(){
         if(app.bCanvasTextEnabled){
-            $("inpC").value = "txt:N";
+            $("inpT").value = "txt:N";
             app.bCanvasTextEnabled = false;
         } else {
-            $("inpC").value = "txt:Y";
+            $("inpT").value = "txt:Y";
             app.bCanvasTextEnabled = true;
         }
         app.drawChart();
@@ -968,7 +980,7 @@ Task.prototype.drawTask = function(r,g,b){
     }
 };
 
-Task.prototype.drawDeadlineLine = function(r,g,b){
+Task.prototype.drawDeadlineLine = function(r,g,b,sStyle){
     var ctx = app.ctx, f = app.f, u = app.u, scale = app.scale;
     // separate horizontal parts of deadline lines
     var ds = ((this.i+1)*50)/app.T.length;
@@ -981,9 +993,21 @@ Task.prototype.drawDeadlineLine = function(r,g,b){
     ctx.globalAlpha = 0.5;
     ctx.beginPath();
     ctx.moveTo(scale*(this.s+this.p)+f-ti, ti*20+f+u);
-    ctx.lineTo(scale*(this.s+this.p)+f-ti, ti*10 +f+ds);
-    ctx.lineTo(scale*this.d+f, ti*10 +f+ds);
-    ctx.lineTo(scale*this.d+f, f);
+    switch(app.sDeadlineStyle){
+        case"d:p": // polygonal
+            ctx.lineTo(scale*(this.s+this.p)+f-ti, ti*10 +f+ds);
+            ctx.lineTo(scale*this.d+f, ti*10 +f+ds);
+            ctx.lineTo(scale*this.d+f, f);
+            break;
+        case"d:s": // straight
+            ctx.lineTo(scale*this.d+f, f);
+            break;
+        case"d:b": // bezier
+            ctx.bezierCurveTo(scale*(this.s+this.p)+f-ti, 100, scale*this.d+f, ti*10 +f+ds, scale*this.d+f, f);
+            break;
+        case"d:n": // none
+            break;
+    }
     ctx.strokeStyle = "rgb("+r+","+g+","+b+")";
     ctx.stroke();
     ctx.strokeStyle = "rgb(0,0,0)";

@@ -10,8 +10,10 @@ input{background-color:#003300; border:1px solid #003300; color:#009900; outline
 input.inpClick{ border:1px solid #003300; font-weight:bold; cursor:pointer;}
 input.inpTxt{width:25px;}
 input#inpA{ width:140px;}
-input#inpD{ width:60px;}
-input#inpC, input#inpK, input#inpL, input#inpLog{ width:45px;}
+input#inpC{ width:60px;}
+input#inpD{ width:35px;}
+input#inpL{ width:40px;}
+input#inpT, input#inpK, input#inpLog{ width:45px;}
 input:hover{background-color:#006600; color:#CCFFCC;}
 input[disabled]{background-color:#111111; color:#009900;}
 span.spnLow{font-size:10px; color:#33DD33;}
