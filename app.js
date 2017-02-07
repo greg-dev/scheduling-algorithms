@@ -36,6 +36,8 @@ var app = {
     u: 150, // Tasks/Machines top line
     wmax: 0,
     scale: 1,
+    iHovered: null,
+    tHoverDelay: null,
 
     // config
     displayLog: true,
@@ -50,6 +52,7 @@ var app = {
 
     init: function(){
         app.cnv = $("cnvsChart");
+        app.cnv.r = app.cnv.getBoundingClientRect();
         app.w = parseInt(app.cnv.width);
         app.h = parseInt(app.cnv.height);
         app.ctx = app.cnv.getContext("2d");
@@ -106,7 +109,14 @@ var app = {
                     }
                 }
             }
-        }
+        };
+
+        app.cnv.addEventListener('mousemove', function(ev){
+            clearTimeout(app.tHoverDelay);
+            app.tHoverDelay = setTimeout(function(){
+                app.mouseMove(ev);
+            }, app.iHovered === null? 15 : 10);
+        }, false);
 
         app.setAlgorithm("P|pj=1,in-tree|Lmax");
         app.start();
@@ -641,6 +651,7 @@ var app = {
         var bSplitted,aRGB;
         var iMax = [];
         for(var i=0,ii=app.T.length;i<ii;i++){
+            app.T[i].coords = [];
             iMax[i] = true;
             for(var j=0;j<ii;j++)
               if((app.T[i].i == app.T[j].i) && (app.T[i].c < app.T[j].c)){
@@ -649,8 +660,17 @@ var app = {
         }
         for(var i=0,ii=app.T.length;i<ii;i++){
             aRGB = app.getColor(i);
-            app.T[i].drawDeadlineLine(aRGB[0],aRGB[1],aRGB[2]);
-            app.T[i].drawDeadlineMark(aRGB[0],aRGB[1],aRGB[2]);
+            if(app.iHovered === null || app.iHovered !== app.T[i].i) {
+                app.T[i].drawDeadlineLine(aRGB[0],aRGB[1],aRGB[2]);
+                app.T[i].drawDeadlineMark(aRGB[0],aRGB[1],aRGB[2]);
+            }
+        }
+        for(var i=0,ii=app.T.length;i<ii;i++){
+            aRGB = app.getColor(i);
+            if(app.iHovered && app.iHovered === app.T[i].i) {
+                app.T[i].drawDeadlineLine(aRGB[0],aRGB[1],aRGB[2]);
+                app.T[i].drawDeadlineMark(aRGB[0],aRGB[1],aRGB[2]);
+            }
         }
         for(var i=0,ii=app.T.length;i<ii;i++){
             aRGB = app.getColor(i);
@@ -930,6 +950,57 @@ var app = {
             if(sValidChars.indexOf(sChar) == -1) bResult = false;
         }
         return bResult;
+    },
+
+    setHoveredTask: function(x,y){
+        var H = null;
+        free: for(var i=0,ii=app.T.length;i<ii;i++){
+            var T = app.T[i];
+            for(var j=0,jj=T.coords.length;j<jj;j++){
+                var c = T.coords[j];
+                if(y>=c[1] && y<=c[3] && x<=c[2] && x>=c[0]) {
+                    H = T;
+                    break free;
+                }
+            }
+        }
+        var hi = H ? H.i : null;
+        for(var i=0,ii=app.T.length;i<ii;i++){
+            app.T[i].hovered = app.T[i].i === hi;
+        }
+        return H;
+    },
+
+    mouseMove: function(ev) {
+        var c = app.cnv;
+        var r = app.cnv.r;
+        var x = parseInt((ev.clientX - r.left) / (r.right - r.left) * c.width);
+        var y = parseInt((ev.clientY - r.top) / (r.bottom - r.top) * c.height);
+        var T = app.setHoveredTask(x,y);
+        var draw = false;
+        if(T){
+            if(T.i !== app.iHovered){
+                app.iHovered = T.i;
+                draw = true;
+            }
+            if(!app.bCursorPoiner) {
+                app.bCursorPoiner = true;
+                app.cnv.style.cursor = "pointer";
+            }
+        } else {
+            if(app.iHovered) {
+                app.iHovered = null;
+                draw = true;
+            }
+            if(app.bCursorPoiner) {
+                app.bCursorPoiner = false;
+                app.cnv.style.cursor = "default";
+            }
+        }
+
+        if(draw) {
+            app.drawChart();
+        }
     }
 };
 
@@ -993,25 +1064,36 @@ Task.prototype.drawTask = function(r,g,b){
     }
 
     // write ri
-    if(["1||Lmax", "P|pj=1,in-tree|Lmax"].inArray(app.sAlgorithm)){
-        this.drawInfo("rj",scale*this.r+f+5, f+20,true);
-    } else {
-        this.drawInfo("r",scale*this.r+f+5, f+20,false);
+    if(app.iHovered === null || app.iHovered === this.i) {
+        if(["1||Lmax", "P|pj=1,in-tree|Lmax"].inArray(app.sAlgorithm)){
+            this.drawInfo("rj",scale*this.r+f+5, f+20,true);
+        } else {
+            this.drawInfo("r",scale*this.r+f+5, f+20,false);
+        }
     }
+
+    // store Task part coords
+    var x1 = parseInt(scale*this.s+f);
+    var y1 = parseInt(ti*20+f+u);
+    var w = parseInt(scale*this.p);
+    var h = 20;
+    this.coords.push([x1,y1,x1+w,y1+h]);
 
     // draw Task rectangle
     ctx.beginPath();
-    ctx.fillStyle = "rgb("+r+","+g+","+b+")";
-    ctx.fillRect(scale*this.s+f, ti*20+f+u, scale*this.p, 20);
+    ctx.fillStyle = this.hovered ? "rgb(255,255,255)" : "rgb("+r+","+g+","+b+")";
+    ctx.fillRect(x1,y1,w,h);
 
     // draw Lateness mark, write Lj
     if(app.displayLateness && this.L > 0){
         ctx.fillStyle = "rgb(204,255,204)";
         ctx.fillRect(scale*this.s+f+2, ti*20+f+u+2,7,16);
-        if(!app.bOneLine) {
-            this.drawInfo("L",scale*this.s+f+20, (1+ti)*20+f+u+10,true);
-        } else {
-            this.drawInfo("L",scale*this.s+f+20, (app.iM+1)*20+f+u+10,true);
+        if(app.iHovered === null || app.iHovered === this.i) {
+            if(!app.bOneLine) {
+                this.drawInfo("L",scale*this.s+f+20, (1+ti)*20+f+u+10,true);
+            } else {
+                this.drawInfo("L",scale*this.s+f+20, (app.iM+1)*20+f+u+10,true);
+            }
         }
     }
 
@@ -1052,7 +1134,7 @@ Task.prototype.drawDeadlineLine = function(r,g,b,sStyle){
         case"d:n": // none
             break;
     }
-    ctx.strokeStyle = "rgb("+r+","+g+","+b+")";
+    ctx.strokeStyle = /* this.hovered ? "rgb(255,255,255)" : */ "rgb("+r+","+g+","+b+")";
     ctx.stroke();
     ctx.strokeStyle = "rgb(0,0,0)";
     ctx.globalAlpha = 1;
@@ -1060,18 +1142,23 @@ Task.prototype.drawDeadlineLine = function(r,g,b,sStyle){
 
 Task.prototype.drawDeadlineMark = function(r,g,b){
     var ctx = app.ctx, f = app.f, scale = app.scale;
-    ctx.globalAlpha = 0.6;
+    ctx.globalAlpha = this.hovered ? 1 : 0.5;
     ctx.beginPath();
     ctx.arc(scale*this.d+f,f,4,0,Math.PI*2,true);
-    ctx.fillStyle = "rgb("+r+","+g+","+b+")";
+    ctx.fillStyle = this.hovered ? "rgb(255,255,255)" : "rgb("+r+","+g+","+b+")";
     ctx.fill();
     ctx.globalAlpha = 1;
-    this.drawInfo("d",scale*this.d+f,f+20,false,false);
+    if(app.iHovered === null || app.iHovered === this.i) {
+        this.drawInfo("d",scale*this.d+f,f+20,false,false);
+    }
 };
 
 Task.prototype.drawInfo = function(sInfo,x,y,bConst,bForceWrite,sColor){
     sColor = sColor || "rgb(0,0,0)";
     bForceWrite = bForceWrite || false;
+    if(app.iHovered === this.i){
+        bConst = true;
+    }
     var info;
     var sParam = sInfo;
     var sIndex = ""+this.i;
