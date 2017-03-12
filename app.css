@@ -1,7 +1,12 @@
 body{background-color:#000000;color:#33DD33; font-family:monospace; font-size:12px; cursor:default; width:1050px;}
 h2{color:#CCFFCC;}
 canvas{background-color:#CCFFCC; border:1px solid black;}
-table{height:350px;}
+table{height:350px; position:absolute; left:50%; top:50%;
+transform:translate(-50%,-50%); 
+-webkit-transform:translate(-50%,-50%);
+-moz-transform:translate(-50%,-50%);
+-ms-transform:translate(-50%,-50%);
+}
 td{vertical-align:top; border:1px solid #003300;}
 td#tdLog{width:450px;}
 pre#log{font-size:8pt; width:470px; height:100%; overflow:scroll; overflow-y:auto; overflow-x:auto;
