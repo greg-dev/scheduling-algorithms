@@ -9,7 +9,7 @@ transform:translate(-50%,-50%);
 }
 td{vertical-align:top; border:1px solid #003300;}
 td#tdLog{width:450px;}
-pre#log{font-size:8pt; width:470px; height:100%; overflow:scroll; overflow-y:auto; overflow-x:auto;
+pre#log{font-size:8pt; height:100%; overflow:scroll; overflow-y:auto; overflow-x:auto;
         max-height:400px; min-height:400px; height:auto !important; height:400px; /* IE6 min-height hack */}
 input{background-color:#003300; border:1px solid #003300; color:#009900; outline:none;}
 input.inpClick{ border:1px solid #003300; font-weight:bold; cursor:pointer;}
