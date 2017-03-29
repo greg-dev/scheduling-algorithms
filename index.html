@@ -9,26 +9,26 @@
       <tr>
         <td>
           <label>Input:</label>
-          <label for="inpPmin">p<sub>min</sub></label> <input id="inpPmin" class="inpTxt" type="text" maxlength="1" value="1" onchange="app.checkDecimal(this,1,9,1);" disabled="disabled" />
-          <label for="inpPmax">p<sub>max</sub></label> <input id="inpPmax" class="inpTxt" type="text" maxlength="1" value="1" onchange="app.checkDecimal(this,1,9,1);" disabled="disabled" />
-          <label for="inpRmin">r<sub>min</sub></label> <input id="inpRmin" class="inpTxt" type="text" maxlength="1" value="0" onchange="app.checkDecimal(this,0,9,0);" disabled="disabled" />
-          <label for="inpRmax">r<sub>max</sub></label> <input id="inpRmax" class="inpTxt" type="text" maxlength="1" value="0" onchange="app.checkDecimal(this,0,9,0);" disabled="disabled" />
-          <label for="inpDmin">d<sub>min</sub></label> <input id="inpDmin" class="inpTxt" type="text" maxlength="1" value="0" onchange="app.checkDecimal(this,0,9,0);" />
-          <label for="inpDmax">d<sub>max</sub></label> <input id="inpDmax" class="inpTxt" type="text" maxlength="1" value="5" onchange="app.checkDecimal(this,1,9,5);" />
-          <label for="inpTnum">T<sub>num</sub></label> <input id="inpTnum" class="inpTxt" type="text" maxlength="1" value="9" onchange="app.checkDecimal(this,1,9,9);" />
-          <label for="inpMnum">M<sub>num</sub></label> <input id="inpMnum" class="inpTxt" type="text" maxlength="1" value="5" onchange="app.checkDecimal(this,1,9,5);" />
+          <label for="inpPmin">p<sub>min</sub></label> <input id="inpPmin" class="inpTxt" type="text" maxlength="1" value="1" onchange="app.checkDecimal(this,1,9,1);" disabled="disabled" title="Minimum processing time"/>
+          <label for="inpPmax">p<sub>max</sub></label> <input id="inpPmax" class="inpTxt" type="text" maxlength="1" value="1" onchange="app.checkDecimal(this,1,9,1);" disabled="disabled" title="Maximum processing time"/>
+          <label for="inpRmin">r<sub>min</sub></label> <input id="inpRmin" class="inpTxt" type="text" maxlength="1" value="0" onchange="app.checkDecimal(this,0,9,0);" disabled="disabled" title="Minimum release time"/>
+          <label for="inpRmax">r<sub>max</sub></label> <input id="inpRmax" class="inpTxt" type="text" maxlength="1" value="0" onchange="app.checkDecimal(this,0,9,0);" disabled="disabled" title="Maximum release time"/>
+          <label for="inpDmin">d<sub>min</sub></label> <input id="inpDmin" class="inpTxt" type="text" maxlength="1" value="0" onchange="app.checkDecimal(this,0,9,0);" title="Minimum due time"/>
+          <label for="inpDmax">d<sub>max</sub></label> <input id="inpDmax" class="inpTxt" type="text" maxlength="1" value="5" onchange="app.checkDecimal(this,1,9,5);" title="Maximum due time"/>
+          <label for="inpTnum">T<sub>num</sub></label> <input id="inpTnum" class="inpTxt" type="text" maxlength="1" value="9" onchange="app.checkDecimal(this,1,9,9);" title="Number of tasks"/>
+          <label for="inpMnum">M<sub>num</sub></label> <input id="inpMnum" class="inpTxt" type="text" maxlength="1" value="5" onchange="app.checkDecimal(this,1,9,5);" title="Number of machines"/>
           <input id="inpR" type="checkbox" checked="false" onclick="app.checkRandomTasks();" style="display:none;"/>
         </td>
         <td nowrap="nowrap">
-          <input id="inpG" class="inpClick" type="button" value="start" onclick="app.start();"/>
-          <input id="inpA" class="inpClick" type="button" value="P|pj=1,in-tree|Lmax" onclick="app.switchAlgorithm(); app.start();"/>
-          <input id="inpC" class="inpClick" type="button" value="chart:T" onclick="app.switchChartType();"/>
-          <input id="inpD" class="inpClick" type="button" value="d:p" onclick="app.switchDeadlineStyle();"/>
-          <input id="inpK" class="inpClick" type="button" value="rgb:N" onclick="app.switchDisplayColors();"/>
-          <input id="inpL" class="inpClick" type="button" value="Lj:Y" onclick="app.switchDisplayLateness();"/>
-          <input id="inpT" class="inpClick" type="button" value="txt:N" onclick="app.switchCanvasText();"/>
+          <input id="inpG" class="inpClick" type="button" value="start" onclick="app.start();" title="Generate random tasks and schedule using selected algorithm"/>
+          <input id="inpA" class="inpClick" type="button" value="P|pj=1,in-tree|Lmax" onclick="app.switchAlgorithm(); app.start();" title="Toggle scheduling algorithm"/>
+          <input id="inpC" class="inpClick" type="button" value="chart:T" onclick="app.switchChartType();" title="Toggle chart type: tasks, machines"/>
+          <input id="inpD" class="inpClick" type="button" value="d:p" onclick="app.switchDeadlineStyle();" title="Toggle deadlines styling: polyline, bezier, straight, none"/>
+          <input id="inpK" class="inpClick" type="button" value="rgb:N" onclick="app.switchDisplayColors();" title="Toggle chart colors"/>
+          <input id="inpL" class="inpClick" type="button" value="Lj:Y" onclick="app.switchDisplayLateness();" title="Toggle lateness marks visibility"/>
+          <input id="inpT" class="inpClick" type="button" value="txt:N" onclick="app.switchCanvasText();" title="Toggle text informations"/>
           <!--<input id="inpLog" class="inpClick" type="button" value="log:Y" onclick="app.switchDisplayLog();"/>-->
-          <input id="inpInfo" class="inpClick" type="button" value="info" onclick="app.showInfo();"/>
+          <input id="inpInfo" class="inpClick" type="button" value="info" onclick="app.showInfo();" title="Display general information"/>
         </td>
       </tr>
       <tr>
