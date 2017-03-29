@@ -922,7 +922,7 @@ var app = {
         if($("inpR").checked){
             app.bRandomTasks = true;
         } else {
-            alert("tylko dane generowane losowo");
+            alert("random tasks only");
             $("inpR").checked = true;
             app.bRandomTasks = true;
         }
@@ -932,7 +932,7 @@ var app = {
         var sString = inp.value;
         if(!app.isNumeric(sString) || (sString<iMin) || (iMax<sString)){
             inp.value = iDefault;
-            alert("Wymagana liczba calkowita z zakresu ["+iMin+","+iMax+"]");
+            alert("The value must be an integer in range ["+iMin+","+iMax+"]");
             return false;
         }
         return true;
