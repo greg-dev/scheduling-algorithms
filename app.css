@@ -21,7 +21,6 @@ input#inpL{ width:40px;}
 input#inpT, input#inpK, input#inpLog{ width:45px;}
 input:hover{background-color:#006600; color:#CCFFCC;}
 input[disabled]{background-color:#111111; color:#009900;}
-span.spnLow{font-size:10px; color:#33DD33;}
 a{color:#CCFFCC; text-decoration:none;}
 a:hover{color:white;}
 ::-moz-selection{background-color:inherit; color:inherit;}
