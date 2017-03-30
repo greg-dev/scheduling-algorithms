@@ -19,6 +19,13 @@ window.onload = function(){
 };
 
 var app = {
+    algorithms: [
+        "1||Lmax",
+        "1|rj,prm|Lmax",
+        "1|rj,prm,prec|Lmax",
+        "P|pj=1,in-tree|Lmax"
+    ],
+
     // algorithm
     T: [],
     iToriginalLength: 0,
@@ -118,7 +125,7 @@ var app = {
             }, app.iHovered === null? 15 : 10);
         }, false);
 
-        app.setAlgorithm("P|pj=1,in-tree|Lmax");
+        app.setAlgorithm(app.algorithms[3]);
         app.start();
         app.showInfo();
     },
@@ -136,7 +143,7 @@ var app = {
         app.generateTasks();
 
         switch(app.sAlgorithm){
-            case "1||Lmax":
+            case app.algorithms[0]: // 1||Lmax
                 logh("Generated tasks:");
                 app.showAllTasks("p,r,d");
 
@@ -154,7 +161,7 @@ var app = {
                 app.showAllTasks("p,r,d,s,c,L");
             break;
 
-            case "1|rj,prm|Lmax":
+            case app.algorithms[1]: // 1|rj,prm|Lmax
                 logh("Generated tasks:");
                 app.showAllTasks("p,r,d");
 
@@ -176,7 +183,7 @@ var app = {
                 app.showAllTasks("p,r,d,s,c,L");
             break;
 
-            case "1|rj,prm,prec|Lmax":
+            case app.algorithms[2]: // 1|rj,prm,prec|Lmax
                 logh("Generated tasks:");
                 app.showAllTasks("p,r,d,prec,waiting");
 
@@ -199,7 +206,7 @@ var app = {
                 app.showAllTasks("p,r,d,d*,s,c,prec,L");
             break;
 
-            case "P|pj=1,in-tree|Lmax":
+            case app.algorithms[3]: // P|pj=1,in-tree|Lmax
                 logh("Generated tasks:");
                 app.showAllTasks("d,prec,next");
 
@@ -256,7 +263,7 @@ var app = {
         app.iToriginalLength = app.T.length;
 
         // jesli zadania sa zalezne, wylosuj zaleznosci:
-        if("1|rj,prm,prec|Lmax" == app.sAlgorithm){
+        if(app.algorithms[2] === app.sAlgorithm){
             for(var i=0;i<app.T.length;i++) // dla kazdego zadania i
                 for(var k=i+1;k<app.T.length;k++) // tylko sposrod kolejnych zadan k
                     if(Math.random()<0.5) // wylosuj, czy uzaleznic zadanie i od zadania k
@@ -270,7 +277,7 @@ var app = {
         }
 
         // jesli in-tree, wylosuj kolejnosc
-        if("P|pj=1,in-tree|Lmax" == app.sAlgorithm){
+        if(app.algorithms[3] === app.sAlgorithm){
             var t,s;
             var aTempT = [];
             var aTempS = [];
@@ -677,7 +684,7 @@ var app = {
             app.T[i].drawTask(aRGB[0],aRGB[1],aRGB[2],iMax[i]);
         }
 
-        if("P|pj=1,in-tree|Lmax"== app.sAlgorithm)
+        if(app.algorithms[3] === app.sAlgorithm)
             app.drawChartTree();
 
         app.ctx.writeBuffered();
@@ -838,28 +845,28 @@ var app = {
         var inpMnum = $("inpMnum");
 
         switch(sAlgorithm){
-            case"1||Lmax":
+            case app.algorithms[0]: // 1||Lmax
                 inpPmin.disabled = false; inpPmin.value = 1;
                 inpPmax.disabled = false; inpPmax.value = 9;
                 inpRmin.disabled = true;  inpRmin.value = 0;
                 inpRmax.disabled = true;  inpRmax.value = 0;
                 inpMnum.disabled = true;  inpMnum.value = 1;
                 break;
-            case"1|rj,prm|Lmax":
+            case app.algorithms[1]: // 1|rj,prm|Lmax
                 inpPmin.disabled = false; inpPmin.value = 1;
                 inpPmax.disabled = false; inpPmax.value = 9;
                 inpRmin.disabled = false; inpRmin.value = 0;
                 inpRmax.disabled = false; inpRmax.value = 9;
                 inpMnum.disabled = true;  inpMnum.value = 1;
                 break;
-            case"1|rj,prm,prec|Lmax":
+            case app.algorithms[2]: // 1|rj,prm,prec|Lmax
                 inpPmin.disabled = false; inpPmin.value = 1;
                 inpPmax.disabled = false; inpPmax.value = 9;
                 inpRmin.disabled = false; inpRmin.value = 0;
                 inpRmax.disabled = false; inpRmax.value = 9;
                 inpMnum.disabled = true;  inpMnum.value = 1;
                 break;
-            case"P|pj=1,in-tree|Lmax":
+            case app.algorithms[3]: // P|pj=1,in-tree|Lmax
                 inpPmin.disabled = true;  inpPmin.value = 1;
                 inpPmax.disabled = true;  inpPmax.value = 1;
                 inpRmin.disabled = true;  inpRmin.value = 0;
@@ -872,12 +879,10 @@ var app = {
     },
 
     switchAlgorithm: function(){
-        switch($("inpA").value){
-            case"1||Lmax":  app.setAlgorithm("1|rj,prm|Lmax"); break;
-            case"1|rj,prm|Lmax": app.setAlgorithm("1|rj,prm,prec|Lmax"); break;
-            case"1|rj,prm,prec|Lmax": app.setAlgorithm("P|pj=1,in-tree|Lmax"); break;
-            case"P|pj=1,in-tree|Lmax": app.setAlgorithm("1||Lmax"); break;
-        }
+        var sAlgorithm = $("inpA").value;
+        for(var i = 0; i < app.algorithms.length; i++)
+            if(sAlgorithm === app.algorithms[i])
+                app.setAlgorithm(app.algorithms[++i % app.algorithms.length]);
     },
 
     switchChartType: function(){
@@ -907,11 +912,7 @@ var app = {
             "<center>Systemy czasu rzeczywistego, WFMiIS, Informatyka, I sum, 08/09",
             "2008.12.14, wersja: 1.4",
             "<h2>Minimalizacja maksymalnego opoznienia",
-            "1||Lmax",
-            "1|rj,prm|Lmax",
-            "1|rj,prm,prec|Lmax",
-            "P|pj=1,in-tree|Lmax</h2>",
-            "",
+            app.algorithms.join('<br/>') + "</h2>",
             "Z uwagi na wykorzystanie w projekcie elementu graficznego &lt;canvas&gt;",
             "skrypt dziala tylko w przegladarkach internetowych",
             "opartych na silniku co najmniej Gecko 1.8 (FireFox od wersji 1.5)</center>"
@@ -1059,13 +1060,13 @@ Task.prototype.drawTask = function(r,g,b){
     // if one line
     var ti = this.i;
     if(app.bOneLine){
-        if("P|pj=1,in-tree|Lmax" == app.sAlgorithm) ti = this.M;
+        if(app.algorithms[3] === app.sAlgorithm) ti = this.M;
         else ti = 1;
     }
 
     // write ri
     if(app.iHovered === null || app.iHovered === this.i) {
-        if(["1||Lmax", "P|pj=1,in-tree|Lmax"].inArray(app.sAlgorithm)){
+        if([app.algorithms[0], app.algorithms[3]].inArray(app.sAlgorithm)){
             this.drawInfo("rj",scale*this.r+f+5, f+20,true);
         } else {
             this.drawInfo("r",scale*this.r+f+5, f+20,false);
@@ -1113,7 +1114,7 @@ Task.prototype.drawDeadlineLine = function(r,g,b,sStyle){
     // if one line
     var ti = this.i;
     if(app.bOneLine){
-        if("P|pj=1,in-tree|Lmax" == app.sAlgorithm) ti = this.M;
+        if(app.algorithms[3] === app.sAlgorithm) ti = this.M;
         else ti = 1;
     }
     ctx.globalAlpha = 0.5;
