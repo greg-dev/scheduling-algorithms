@@ -1038,13 +1038,13 @@ Task.prototype.info = function(sInfo){
     sInfo = " Task i="+this.i;
     for(var i=0,ii=aInfo.length;i<ii;i++)
         switch(aInfo[i]){
-            case"p": sInfo += " p="+this.p; break;
-            case"r": sInfo += " r="+this.r; break;
-            case"d": sInfo += " d="+this.d; break;
-            case"s": sInfo += " s="+this.s; break;
-            case"c": sInfo += " c="+this.c; break;
-            case"L": sInfo += " L="+this.L; break;
-            case"M": sInfo += " M="+this.M; break;
+            case"p":
+            case"r":
+            case"d":
+            case"s":
+            case"c":
+            case"L":
+            case"M": sInfo += " "+aInfo[i]+"="+this[aInfo[i]]; break;
             case"d*": sInfo += " d*="+this.dprec; break;
             case"prec": sInfo += " prec=["+this.prec+"]"; break;
             case"waiting": sInfo += " waiting=["+this.waiting+"]"; break;
